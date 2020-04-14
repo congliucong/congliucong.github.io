@@ -71,8 +71,8 @@ footer:
 
   # Beian ICP and gongan information for Chinese users. See: http://www.beian.miit.gov.cn, http://www.beian.gov.cn
   beian:
-    enable: false
-    icp:
+    enable: true
+    icp: 豫ICP备18032544号
     # The digit in the num of gongan beian.
     gongan_id:
     # The full num of gongan beian.
@@ -877,7 +877,6 @@ canvas_ribbon:
   alpha: 0.6 # The transparency of the ribbon
   zIndex: -1 # The display level of the ribbon
 
-
 #! ---------------------------------------------------------------
 #! DO NOT EDIT THE FOLLOWING SETTINGS
 #! UNLESS YOU KNOW WHAT YOU ARE DOING
@@ -1001,9 +1000,7 @@ vendors:
   # canvas_ribbon: //cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-ribbon@1/canvas-ribbon.js
   canvas_ribbon:
 
-auto_excerpt:
-  enable: true
-  length: 150
+
 # Assets
 css: css
 js: js
