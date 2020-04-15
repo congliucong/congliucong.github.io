@@ -1,10 +1,12 @@
 ---
-title: 彻底搞懂-Synchronized
+title: 搞懂Java多线程系列之Synchronized
 date: 2019-04-13 22:56:55
-tags:
+tags: Java
+categories: Java基础
+
 ---
 
-不管在实际开发中，还是在面试中，synchronized一直扮演着重要的角色。因为这个关键字很能体现工程师的技术功底，到底是简单的会用，还是能够深入了解底层实现。简单的一个synchronized，能由浅入深，一直问到底层硬件。因此，借此文章，来梳理一下相关技术体系。
+不管在实际开发中，还是在面试中，synchronized一直扮演着重要的角色。因为这个关键字很能体现工程师的技术功底，到底是简单的会用，还是能够深入了解底层实现。通过简单的一个synchronized关键字，由浅入深，步步深入，令人猝不及防。因此，借此文章，来梳理一下相关技术体系。
 
 <!-- more -->
 
@@ -72,9 +74,9 @@ synchronized在操作同步资源之前，会先给同步资源加锁，这个�
 
 对象头包括两部分，一部分是Mark Word，默认存储对象的HashCode，分代年龄和锁的标志位信息。
 
-另外一部分是类型指针，即对象指向该对象所属类的指针，即通过这个指针来确定该对象是哪个类的实例。Mark Word默认存储结构如下：![](new-article.assets/markword1.png)
+另外一部分是类型指针，即对象指向该对象所属类的指针，即通过这个指针来确定该对象是哪个类的实例。Mark Word默认存储结构如下：![](synchronized/markword1.png)
 
-在运行期间，MarkWord里存储的数据会随着锁标志位变化为变化。当对象状态为偏向锁时，存储的是偏向的线程ID；当为轻量级锁时，存储的是指向线程栈中的Lock Record；当为重量级锁时，为指向堆中monitor的指针。![](new-article.assets/markword2.png)
+在运行期间，MarkWord里存储的数据会随着锁标志位变化为变化。当对象状态为偏向锁时，存储的是偏向的线程ID；当为轻量级锁时，存储的是指向线程栈中的Lock Record；当为重量级锁时，为指向堆中monitor的指针。![](synchronized/markword2.png)
 
 由上图也可以知道，锁的状态变化是 无锁状态-->偏向锁-->轻量级锁-->重量级锁。
 
@@ -82,6 +84,7 @@ synchronized在操作同步资源之前，会先给同步资源加锁，这个�
 
 当锁为重量级锁时，MarkWord中存储的是指向重量级锁的指针。这个monitor是什么？
 monitor对象主要包括owner，cxq，EntryList，WaitSet。
+
 * owner： 主要存储拥有锁的线程
 * cxq： 当一个线程尝试获得锁，如果当前锁被占用，会把该线程插入到cxq队列的对首
 * EntryList: 当持有锁的线程释放锁之前，会把cxq中的所有元素移动到EntryList中，并唤醒entryList中的某个线程，重新竞争锁。
@@ -98,7 +101,7 @@ synchronized通过monitor来实现线程同步，Monitor依赖底层操作系统
 #### 偏向锁
 
 偏向锁对象头内容：
-![](new-article.assets/BiasedLock.jpg)
+![](synchronized/BiasedLock.jpg)
 
 偏向锁主要解决无竞争下的锁问题。大多数情况下，锁总是由同一线程多次获得，不存在多线程竞争，那么该线程会自动获取锁，从而降低获取锁的代价。当一个线程访问同步代码并获取锁时，会在markword中用CAS将线程ID替换为当前线程ID，偏向锁只需要在第一次获取锁的时候，进行CAS操作，下次再次进入或者退出同步块，就不需要再次通过CAS操作进行加锁和解锁，只需要比较线程ID即可，从而减少了的性能的开销。
 
@@ -106,11 +109,11 @@ synchronized通过monitor来实现线程同步，Monitor依赖底层操作系统
 
 这里有张图，我觉得能够很好的说明轻量级锁的获取过程和如何升级为轻量级锁。但是，我有个疑问还没有解决，根据上面的描述，***偏向锁只要出现其他线程获取偏向锁就会撤销偏向锁，所以偏向锁是如何重偏向的?***。根据下图中的说明是根据是否开启重偏向来判断的？这是有参数配置的吗？有待解决。
 
-![](new-article.assets/biaslock.png)
+![](synchronized/biaslock.png)
 
 下图出自《深入理解Java虚拟机》中。
 
-![](new-article.assets/lock.png)
+![](synchronized/lock.png)
 
 
 
@@ -134,7 +137,7 @@ synchronized通过monitor来实现线程同步，Monitor依赖底层操作系统
 
 那么肯定有人就会问了，为什么不能一开始就是无锁的，这样上来就走轻量级锁的逻辑，那偏向锁呢，答案是下面的这个知识：
 
-> JDK1.6之后默认开始偏向锁，-XX：+UseBiased Locking，如果再设置-XX:BiasedLockingStartupDelay=0（JVM默认延时加载偏向锁，设置为0则取消延时加载偏向锁），当创建一个新对象时，JVM会默认将对象的markword的倒数第三位设置为1，线程ID为0，此时意味着可偏向但未偏向任何线程的状态，专业术语就是匿名偏向状态(anonymously biased)，可以理解为特殊状态的无锁，之后才进入偏向锁的获取过程，将倒数第三位改为1。所以说，当锁对象处于无锁状态时，必定是偏向锁发生了竞争。
+> JDK1.6之后默认开始偏向锁，-XX：+UseBiased Locking，如果再设置-XX:BiasedLockingStartupDelay=0（JVM默认延时加载偏向锁，设置为0则取消延时加载偏向锁），当创建一个新对象时，JVM会默认将对象的markword的倒数第三位设置为1，线程ID为0，此时意味着可偏向但未偏向任何线程的状态，专业术语就是匿名偏向状态(anonymously biased)，可以理解为特殊状态的无锁，之后才进入偏向锁的获取过程，将倒数第三位改为1。所以说，当锁对象处于无锁状态时，必定是偏向锁发生了竞争。![](synchronized/markword.jpg)
 
 ##### 轻量级锁的释放
 
@@ -156,13 +159,15 @@ synchronized通过monitor来实现线程同步，Monitor依赖底层操作系统
 
 如果此时其他线程也来竞争重量级锁，该线程会插入到cxq队列的队首，等待持有锁的线程释放前，将自己移动到entryList中，然后唤醒entrylist中的队首线程。
 
+monitor主要 依赖操作系统底层的mutex lock来实现。
+
 
 
 ### 总结
 
 其实这里有张图能够很好的说明整个过程，但是这个图里里面有一点我感觉是错误的，就是当锁状态为01时，不是偏向锁 0，此刻直接走轻量级锁的逻辑，不会去CAS操作替换Thread Id，这个可能是上面留的疑问：重偏向时的操作，这个先留个作业吧。
 
-![](new-article.assets/锁分配和膨胀过程.png)
+![](synchronized/process.png)
 
 
 
