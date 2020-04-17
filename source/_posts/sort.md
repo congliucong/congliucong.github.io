@@ -346,31 +346,88 @@ public class InsertSort {
 
 ```java
 public class HeapSort {
-    /**
-     * 下沉调整
-     * @param array 待调整的堆
-     * @param parentIndex 要下沉的父节点
-     * @param length 堆的有效大小
-     */
-    public static void downAdjust(int[] array, int parentIndex, int length) {
+    public static void downAdjust(int[] arr, int parentIndex, int length) {
         //temp 保存父节点值，用于最后的赋值
-        int temp = array[parentIndex];
+        int temp = arr[parentIndex];
         int childIndex = 2 * parentIndex + 1;
         while (childIndex < length) {
-            //如果有右孩子，且右孩子大于左孩子的值，则定位到右孩子
-            if (childIndex + 1 < length && array[childIndex + 1] > array[childIndex]) {
+            //如果有右孩子，且右孩子大于左孩子的值，则定位到右孩子。
+            if (childIndex + 1 < length && arr[childIndex] < arr[childIndex + 1]) {
                 childIndex++;
             }
-            //如果父节点大于任何一个孩子的值，则直接跳出
-            if (temp >= array[childIndex]) {
+            //如果父节点大于任何一个孩子，则跳出
+            if (temp >= arr[childIndex]) {
                 break;
             }
-            //无需真正交换，单向赋值即可
-            array[parentIndex] = array[childIndex];
+            arr[parentIndex] = arr[childIndex];
             parentIndex = childIndex;
-            childIndex = 2 * childIndex + 1;
+            childIndex = 2 * parentIndex + 1;
         }
-        array[parentIndex] = temp;
+        arr[parentIndex] = temp;
+    }
+
+    public static void heapSort(int[] arr) {
+        //构建最大二叉堆，从最后一个非叶子开始，依次做下沉处理。
+        for (int i = (arr.length - 2) / 2; i >= 0; i--) {
+            downAdjust(arr, i, arr.length);
+        }
+        System.out.println(Arrays.toString(arr));
+        //循环删除堆顶元素，移到集合尾部，然后调整堆产生的新的堆顶
+        for (int i = arr.length - 1; i > 0; i--) {
+            //最后1个元素和第一个元素进行交换
+            int temp = arr[i];
+            arr[i] = arr[0];
+            arr[0] = temp;
+            //下沉调整最大堆
+            downAdjust(arr, 0, i);
+        }
+
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 3, 2, 6, 5, 7, 8, 9, 10, 0};
+        heapSort(arr);
+        System.out.println(Arrays.toString(arr));
     }
 }
 ```
+堆排序空间复杂度是O(1)，整体时间复杂度是O(nlogn)。
+
+### 计数排序
+假设数组中有20个随机整数，取值范围为0~20，要求用最快的速度把这20个整数从小到大排序。这种情况可以使用计数排序。计数排序的大体过程是：考虑到这些整数只有 0 1 2 3 4 6 7 8 9 10这11个数，因此建立一个长度为11的数组，下标由0到10，元素初始值为0。假如有以下20个随机数：9，3，5，4，9，1，2，7，8，1，3，6，5，3，4，0，10，9 ，7，9。遍历这个数组，每一个元素按值对号入座，对应数组下标的元素加一操作。例如第一个整数为9，则数组下标9的元素加1。所有元素遍历完毕，最终结果是：
+![1587103336](sort/1587103336.jpg)
+最后，遍历数组，输出数组的下标值，元素值是多少，就输出几次，输出结果就是有序的。
+```java
+public class countSort {
+    public static int[] sort(int[] arr) {
+        int max = 0;
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] > max) {
+                max = arr[i];
+            }
+        }
+        int[] temp = new int[max + 1];
+        for (int i : arr) {
+            temp[i]++;
+        }
+        int[] sortArray = new int[arr.length];
+        int index = 0;
+        for (int i = 0; i < temp.length; i++) {
+            for (int j = 0; j < temp[i]; j++) {
+                sortArray[index++] = i;
+            }
+        }
+
+        return sortArray;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {9, 3, 5, 4, 9, 1, 2, 7, 8, 1, 3, 6, 5, 3, 4, 0, 10, 9, 7, 9};
+        int[] sortArray = sort(arr);
+        System.out.println(Arrays.toString(sortArray));
+    }
+}
+```
+计数排序有两个局限性：
+1. 当数组中最大和最小差值过大时，不使用
+2. 当数列元素不是整数时，也不适用。
