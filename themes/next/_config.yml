@@ -593,7 +593,7 @@ comments:
 
 # Disqus
 disqus:
-  enable: false
+  enable: true
   shortname:
   count: true
   #post_meta_order: 0
@@ -646,16 +646,16 @@ livere_uid: # <your_uid>
 # For more information: https://gitalk.github.io, https://github.com/gitalk/gitalk
 gitalk:
   enable: false
-  github_id: # GitHub repo owner
-  repo: # Repository name to store issues
-  client_id: # GitHub Application Client ID
-  client_secret: # GitHub Application Client Secret
-  admin_user: # GitHub repo owner and collaborators, only these guys can initialize gitHub issues
+  github_id: 563646814@qq.com
+  repo: congliucong.github.io
+  client_id: b07b24487861be81f6fb
+  client_secret: 1cb90425a2be4aa41dab9ee8ed28f3efb5bbe8db
+  admin_user: 563646814@qq.com
   distraction_free_mode: true # Facebook-like distraction free mode
   # Gitalk's display language depends on user's browser or system environment
   # If you want everyone visiting your site to see a uniform language, you can set a force language value
   # Available values: en | es-ES | fr | ru | zh-CN | zh-TW
-  language:
+  language: zh-CN
 
 
 # ---------------------------------------------------------------
