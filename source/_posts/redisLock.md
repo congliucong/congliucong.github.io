@@ -1,5 +1,5 @@
 ---
-title: 分布式之分布式锁
+title: 分布式之Redis分布式锁
 date: 2020-04-19 21:21:17
 tags: 分布式锁
 categories: 分布式
