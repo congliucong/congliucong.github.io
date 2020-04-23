@@ -203,9 +203,9 @@ private synchronized Object getSingletonInstance() {
 
 根据条件：
 
-* config.isOptimize()是否进行优化，默认是false。
-* config.isProxyTargetClass()即ProxyConfig的proxyTargetClass属性，是否强制使用cglib代理。
-* hasNoUserSuppliedProxyInterfaces(config)目标类没有实现接口，或者有实现接口但是接口类型是SpringProxy‘
+1. config.isOptimize()是否进行优化，默认是false。
+2. config.isProxyTargetClass()即ProxyConfig的proxyTargetClass属性，是否强制使用cglib代理。
+3. hasNoUserSuppliedProxyInterfaces(config)目标类没有实现接口，或者有实现接口但是接口类型是SpringProxy‘
 
 只要三个条件有一个为true，并且目标类不是接口，就会采用cglib方式来创建对象。其他情况采用JDK动态代理的方式来创建。
 
@@ -452,7 +452,7 @@ public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 
 至此，获取当前调用方法的拦截链总算分析完毕。
 
-* #### 重点 3  没有拦截链
+- #### 重点 3  没有拦截链
 
 ```java
 if (chain.isEmpty()) {
@@ -583,9 +583,17 @@ AOP的整个工作机制如上。可能看下来有点迷惑。我们来从Proxy
 当有了代理对象后，调用代理对象的方法时，最终都会转发到CglibAopProxy.intercept或者JdkDynamicAopProxy.invoke()。以JdkDynamicAopProxy.invoke()为例：1.首先，根据JdkDynamicAopProxy里面的AdvisedSupport继承于ProxyConfig，来判断是否需要在线程内部暴露（使用ThreadLocal模式实现线程内部共享）；2.其次，获取该方法的拦截链条，根据不同Advisor，使用适配器模式将其包装成不同的MethodInterceptor，如果有方法限制，则将MethodInterceptor和MethodMatcher包装成InterceptorAndDynamicMethodMatcher。拦截链条组装完毕后返回。；3.如果连接链为空，则利用反射直接调用目标对象的方法。如果拦截链不为空，则将其组装为ReflectiveMethodInvocation，然后执行其proceed()方法。4.从拦截链从依次取出MethodInterceptor调用其invoke方法，例如afterReturning则先执行MethodInvocation.proceed(),然后再调用afterReturning()方法。将该拦击器后移，直到拦截链调用完成。
 
 主要有三点：
-+ 代理对象怎么生成？
-JDK 或者 Cglib。
-+ 拦截器链的构造过程及如何执行？
-如上
-+ 如何在Advice上添加PointCut，并且是如何起作用的。
-在获取方法拦截链时，如果有pointcut，则封装为InterceptorAndDynamicMethodMatcher，拦截链调用时，判断是否匹配，如果不匹配则跳过当前拦截器，如果匹配则执行invoke方法。
+1. 代理对象怎么生成？
+    JDK 或者 Cglib。
+2. 拦截器链的构造过程及如何执行？
+    如上
+3. 如何在Advice上添加PointCut，并且是如何起作用的。
+    在获取方法拦截链时，如果有pointcut，则封装为InterceptorAndDynamicMethodMatcher，拦截链调用时，判断是否匹配，如果不匹配则跳过当前拦截器，如果匹配则执行invoke方法。
+
+
+
+> 参考列表：
+>
+> 1. https://blog.csdn.net/luanlouis/article/details/51155821
+> 2. https://www.iteye.com/blog/lgbolgger-2116164
+

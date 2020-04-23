@@ -255,7 +255,7 @@ post_meta:
   item_text: true
   created_at: true
   updated_at:
-    enable: true
+    enable: false
     another_day: true
   categories: true
 
@@ -630,7 +630,7 @@ valine:
   placeholder: Just go go # Comment box placeholder
   avatar: mm # Gravatar style
   guest_info: nick,mail,link # Custom comment header
-  pageSize: 10 # Pagination size
+  pageSize: 5 # Pagination size
   language: zh-cn
   visitor: false # Article reading statistic
   comment_count: true # If false, comment count will only be displayed in post page, not in home page
