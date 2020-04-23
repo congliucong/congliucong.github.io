@@ -1,11 +1,12 @@
 ---
 title: Spring之AOP原理
-date: 2020-04-16 20:03:50
+date: 2020-04-22 20:03:50
 tags: Spring
 categories: Spring
 ---
 
-这篇文章主要从源码角度分析一下Spring AOP的原理。好记性不如烂笔头。一些基础的概念就不展开了，比如说什么是AOP，如何使用AOP、AOP使用场景等。直接按照通过ProxyFactoryBean手动创建Proxy来，进行分析。
+这篇文章主要从源码角度分析一下Spring AOP的原理。好记性不如烂笔头。一些基础的概念就不展开了，比如说什么是AOP，如何使用AOP、AOP使用场景等。我们以直接通过ProxyFactoryBean手动创建Proxy为例，进行分析。
+<!-- more -->
 
 ### 手动创建代理对象
 
@@ -575,10 +576,16 @@ public Object proceed() throws Throwable {
 
 ### 总结
 
-AOP的整个工作机制如上。可能看下来有点迷惑。我们画图来说明。
+AOP的整个工作机制如上。可能看下来有点迷惑。我们来从ProxyFactoryBean进行总结。
+
+当调用proxyFactoryBean.getObject()时，因为proxyFactoryBean继承于ProxyCreatorSupport，因此调用ProxyCreatorSupport.createAopProxy()来生成AopProxy：AopProxy有两个实现类，1.CglibAopProxy 2.JdkDynamicAopProxy。根据目标对象是否接口或者是否强制使用cglib来确定返回CglibAopProxy还是JdkDynamicAopProxy。此时已经有了AopProxy，通过AopProxy.getProxy来获取代理对象。
+
+当有了代理对象后，调用代理对象的方法时，最终都会转发到CglibAopProxy.intercept或者JdkDynamicAopProxy.invoke()。以JdkDynamicAopProxy.invoke()为例：1.首先，根据JdkDynamicAopProxy里面的AdvisedSupport继承于ProxyConfig，来判断是否需要在线程内部暴露（使用ThreadLocal模式实现线程内部共享）；2.其次，获取该方法的拦截链条，根据不同Advisor，使用适配器模式将其包装成不同的MethodInterceptor，如果有方法限制，则将MethodInterceptor和MethodMatcher包装成InterceptorAndDynamicMethodMatcher。拦截链条组装完毕后返回。；3.如果连接链为空，则利用反射直接调用目标对象的方法。如果拦截链不为空，则将其组装为ReflectiveMethodInvocation，然后执行其proceed()方法。4.从拦截链从依次取出MethodInterceptor调用其invoke方法，例如afterReturning则先执行MethodInvocation.proceed(),然后再调用afterReturning()方法。将该拦击器后移，直到拦截链调用完成。
 
 主要有三点：
-
-* 代理对象怎么生成？
-* 拦截器链的构造过程及如何执行？
-* 如何在Advice上添加PointCut，并且是如何起作用的。
++ 代理对象怎么生成？
+JDK 或者 Cglib。
++ 拦截器链的构造过程及如何执行？
+如上
++ 如何在Advice上添加PointCut，并且是如何起作用的。
+在获取方法拦截链时，如果有pointcut，则封装为InterceptorAndDynamicMethodMatcher，拦截链调用时，判断是否匹配，如果不匹配则跳过当前拦截器，如果匹配则执行invoke方法。
