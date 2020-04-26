@@ -1,5 +1,5 @@
 ---
-阻塞队列使用**LinkedBlockingQueue**。title: Java基础之线程池
+title: Java基础之线程池
 date: 2020-04-25 20:37:09
 tags: Java
 categories: Java基础
@@ -439,7 +439,8 @@ private Runnable getTask() {
         int c = ctl.get();
         int rs = runStateOf(c);
 
-        // Check if queue empty only if necessary.
+        // 如果rs>=SHUTDOWN，则判断是否>=stop，线程池是否在stop，以及队列是否为空
+        //是的话就将线程数减少1，并返回空。
         if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) {
             decrementWorkerCount();
             return null;
@@ -447,22 +448,28 @@ private Runnable getTask() {
 
         int wc = workerCountOf(c);
 
-        // Are workers subject to culling?
+        // timed字段用来判断是否需要超时控制。allowCoreThreadTimeOut是用来设置核心线//程数的线程是否允许超时。wc > corePoolSize,说明线程数大于核心线程数
+        //超过核心线程数的线程需要进行控制。
         boolean timed = allowCoreThreadTimeOut || wc > corePoolSize;
 
+        //如果wc > maximumPoolSize有可能重设了maximumPoolSize
+        //timed && timedOut 表明当前操作需要控制超时线程并且上次队列里去任务超时了
+        //那么就需要将线程数减1.失败的话则重试。
         if ((wc > maximumPoolSize || (timed && timedOut))
             && (wc > 1 || workQueue.isEmpty())) {
             if (compareAndDecrementWorkerCount(c))
                 return null;
             continue;
         }
-
+        //通过timed为true，说明需要进行超时控制。则从队列poll方法，如果keepAliveTime时间内没有取到任务，则返回null,
+        //否则通过take方法，如果队列为空，则阻塞。
         try {
             Runnable r = timed ?
                 workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :
                 workQueue.take();
             if (r != null)
                 return r;
+            //r == null，说明已经超时，设置为ture,下次循环会返回null。
             timedOut = true;
         } catch (InterruptedException retry) {
             timedOut = false;
@@ -470,7 +477,211 @@ private Runnable getTask() {
     }
 }
 ```
+这个方法就是线程池管理线程的核心方法。
+boolean timed = allowCoreThreadTimeOut || wc > corePoolSize为false。
+Runnable r = timed ?workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :
+                workQueue.take();
+如果当前线程数小于核心线程数，则timed会是false，会执行take方法，如果队列为空，则一直阻塞，保证了核心线程数的线程不会被销毁。
+如果当前线程数大于核心线程数，小于最大线程数，则timed为ture，会执行workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS)方法，指定时间内取不到任务，则设timedOut为true，说明队列里面没有任务了，不需要这么多线程来执行任务。下次进入循环时，
+> if ((wc > maximumPoolSize || (timed && timedOut))
+>             && (wc > 1 || workQueue.isEmpty())) {
+>             if (compareAndDecrementWorkerCount(c))
+>                 return null;
+>             continue;
+>         }
 
+这个判断会为true，进入if内，将线程数减一，随后返回null。runWorker方法会跳出while循环，最后执行 processWorkerExit(w, completedAbruptly);从workers中去掉该worker，随后由JVM回收。
+行云流水，一气呵成，妙啊。
+
+### processWorkerExit方法
+
+```java
+    private void processWorkerExit(Worker w, boolean completedAbruptly) {
+        //如果completedAbruptly为true,则说明线程出现了异常，则需要将workcount减1
+        //如果为false，说明没有出现异常，只是取不到任务了，前面方法已经减过了，这里就
+        //不需要了
+        if (completedAbruptly) // If abrupt, then workerCount wasn't adjusted
+            decrementWorkerCount();
+        //加锁
+        final ReentrantLock mainLock = this.mainLock;
+        mainLock.lock();
+        try {
+            //完成数+1
+            completedTaskCount += w.completedTasks;
+            //从workers中取出，也就是去掉一个线程，由JVM自动回收。
+            workers.remove(w);
+        } finally {
+            mainLock.unlock();
+        }
+        // 根据线程池状态进行判断是否结束线程池
+        tryTerminate();
+     
+        int c = ctl.get();
+        //如果线程池处于RUNNING或SHUTDOWN状态时
+        if (runStateLessThan(c, STOP)) {
+            //如果不是异常结束的
+            if (!completedAbruptly) {
+                //如果allowCoreThreadTimeOut=true，并且等待队列有任务，至少保留一个worker；
+                int min = allowCoreThreadTimeOut ? 0 : corePoolSize;
+                if (min == 0 && ! workQueue.isEmpty())
+                    min = 1;
+                //如果allowCoreThreadTimeOut=false，workerCount不少于corePoolSize
+                if (workerCountOf(c) >= min)
+                    return; // replacement not needed
+            }，则直接新增个线程。
+            //如果不是异常结束的，则直接新增个线程。
+            addWorker(null, false);
+        }
+    }
+```
+以上就是线程池从执行到结束的所有方法。我们可以总结出线程池的声明周期了。从execute()执行任务开始，会addwork新增worker，worker执行之后，会调用runWorker方法。runworker会不断执行getTask任务执行，直到getTask为null，最后调用processWorkerExit删除线程。
+
+### tryTerminate方法
+
+在执行processWorkerExit方法时，会执行tryTerminate()，这个方法的含义是根据线程池的状态决定是否关闭线程池。
+
+```java
+    final void tryTerminate() {
+        for (;;) {
+            int c = ctl.get();
+            //如果线程池正在运行则不用关闭
+            //或者 TIDYING或TERMINATED 说明已经没有运行的线程了 也不用关闭
+            //或者 处于 SHUTDOWN状态但是队列中任务还没完成，也不用关闭
+            if (isRunning(c) ||
+                runStateAtLeast(c, TIDYING) ||
+                (runStateOf(c) == SHUTDOWN && ! workQueue.isEmpty()))
+                return;
+            //如果线程池数量不为0，则中断一个空闲的线程，并返回。
+            if (workerCountOf(c) != 0) { // Eligible to terminate
+                interruptIdleWorkers(ONLY_ONE);
+                return;
+            }
+            // 获取main锁。
+            final ReentrantLock mainLock = this.mainLock;
+            mainLock.lock();
+            try {
+                //将状态改为TIDYING，成功则调用terminated()
+                if (ctl.compareAndSet(c, ctlOf(TIDYING, 0))) {
+                    try {
+                        //留给子类实现
+                        terminated();
+                    } finally {
+                        //将状态改为TERMINATED
+                        ctl.set(ctlOf(TERMINATED, 0));
+                        termination.signalAll();
+                    }
+                    return;
+                }
+            } finally {
+                mainLock.unlock();
+            }
+            // else retry on failed CAS
+        }
+    }
+```
+这里思考为什么当线程数量不为0时，要中断一个空闲线程呢？
+首先，要明确前提条件，当程序走到interruptIdleWorkers(ONLY_ONE)这里，肯定线程池已经是SHUTDOWN状态了，并且任务队列已经处理完毕了。因为在getTask方法中，workQueue.take()时，线程会一直阻塞。线程池中 的线程就无法中断回收，所以这里调用interruptIdleWorkers(ONLY_ONE)将阻塞的线程中断，而阻塞的线程中断后也会执行processWorkerExit--->tryTerminate，这样最终就能把所有线程都给中断回收。妙啊。
+
+这里我们可以总结出线程池如何管理线程的？
+
+线程池关闭的关键就在于一个worker退出之后，会调用 tryTerminate() 方法，将退出的信号传递下去，这样其他的线程才能够被依次处理，最后线程池会变为 TERMINATE 态。
+
+### shutdown方法
+
+```java
+    public void shutdown() {
+        final ReentrantLock mainLock = this.mainLock;
+        mainLock.lock();
+        try {
+            checkShutdownAccess();
+            advanceRunState(SHUTDOWN);
+            // 中断空闲线程
+            interruptIdleWorkers();
+            onShutdown(); // hook for ScheduledThreadPoolExecutor
+        } finally {
+            mainLock.unlock();
+        }
+        //上面分析的方法。尝试结束线程池
+        tryTerminate();
+    }
+```
+
+
+### interruptIdleWorkers方法
+
+nterruptIdleWorkers遍历workers中所有的工作线程，若线程没有被中断,即tryLock成功，就中断该线程。
+
+```java
+    private void interruptIdleWorkers(boolean onlyOne) {
+        final ReentrantLock mainLock = this.mainLock;
+        mainLock.lock();
+        try {
+            for (Worker w : workers) {
+                Thread t = w.thread;
+                if (!t.isInterrupted() && w.tryLock()) {
+                    try {
+                        t.interrupt();
+                    } catch (SecurityException ignore) {
+                    } finally {
+                        w.unlock();
+                    }
+                }
+                if (onlyOne)
+                    break;
+            }
+        } finally {
+            mainLock.unlock();
+        }
+    }
+```
+
+到这里我们可以总结为什么worker类要继承AQS，并且在执行任务时要加锁。
+在工作线程处理任务时会进行lock，在执行shutdown()方法时，interruptIdleWorkers在进行中断时会使用tryLock来判断该工作线程是否正在处理任务，如果tryLock返回true，说明该工作线程当前未执行任务，这时才可以被中断。
+![](threadpool/workerAQS.jpg)
+
+### 线程池在业务中的实践场景
+
+既然线程池这么叼，那么我们应该什么时候去使用线程池呢？不管所有技术方案，只有适合才是最好的。并不是说技术高深的，肯定就是最叼的。
+根据[美团](https://tech.meituan.com/2020/04/02/java-pooling-pratice-in-meituan.html)的方案文章中，大概有这两种分类。
+
+1. 快速响应用户请求
+   用户发起请求，需要以最快的时间返回响应。比如用户查看商品信息，我们可以将商品的信息以不同维度如详情、库存、图片等整合之后返回。这种情况下我们可以将请求调用封装成任务并行执行，缩短总体响应时间。但是这种情况下不应该设置队列去缓冲并发任务，应该调高corePoolSize和maxPoolSize尽可能创造多的线程快速执行任务。
+
+2.  快速处理批量任务
+  离线的大量计算任务，需要快速执行。比如说报表，这种场景不需要响应速度有多快，而是关注如何使用有线的资源，尽可能在单位时间内处理更多的任务。也就是吞吐量优先，所以应该设置队列去缓冲任务。
+
+### 如何合理设置线程池参数？
+
+怎么设置线程池参数，这个并没有一个固定的答案。网上大多数方案是按照IO密集型还是CPU密集型区分。
+《Java并发编程实战》对于CPU密集型建议是处理器核心数+1。对于IO密集型则是列出一个公式。
+但是不同系统有不同的现实情况，一概而论肯定不是最好的方案。
+美团技术团队给出的方案是动态调整线程参数。毕竟世界是动态发展的，少了就加，多了就减，动态调整，才能达到和谐，妙啊。
+
+动态设置线程池参数，我们主要关注的是核心线程数corePoolSize、最大线程数maximumPoolSize、以及队列容量。
+
+而JDK也提供了相应的方法：
+setCorePoolSize(int corePoolSize)方法可以动态调整核心线程数。
+```java
+    public void setCorePoolSize(int corePoolSize) {
+        if (corePoolSize < 0)
+            throw new IllegalArgumentException();
+        int delta = corePoolSize - this.corePoolSize;
+        this.corePoolSize = corePoolSize;
+        if (workerCountOf(ctl.get()) > corePoolSize)
+            interruptIdleWorkers();
+        else if (delta > 0) {
+            // We don't really know how many new threads are "needed".
+            // As a heuristic, prestart enough new workers (up to new
+            // core size) to handle the current number of tasks in
+            // queue, but stop if queue becomes empty while doing so.
+            int k = Math.min(delta, workQueue.size());
+            while (k-- > 0 && addWorker(null, true)) {
+                if (workQueue.isEmpty())
+                    break;
+            }
+        }
+    }
+```
 
 
 >参考列表
