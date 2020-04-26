@@ -648,7 +648,7 @@ nterruptIdleWorkers遍历workers中所有的工作线程，若线程没有被中
    用户发起请求，需要以最快的时间返回响应。比如用户查看商品信息，我们可以将商品的信息以不同维度如详情、库存、图片等整合之后返回。这种情况下我们可以将请求调用封装成任务并行执行，缩短总体响应时间。但是这种情况下不应该设置队列去缓冲并发任务，应该调高corePoolSize和maxPoolSize尽可能创造多的线程快速执行任务。
 
 2.  快速处理批量任务
-  离线的大量计算任务，需要快速执行。比如说报表，这种场景不需要响应速度有多快，而是关注如何使用有线的资源，尽可能在单位时间内处理更多的任务。也就是吞吐量优先，所以应该设置队列去缓冲任务。
+    离线的大量计算任务，需要快速执行。比如说报表，这种场景不需要响应速度有多快，而是关注如何使用有线的资源，尽可能在单位时间内处理更多的任务。也就是吞吐量优先，所以应该设置队列去缓冲任务。
 
 ### 如何合理设置线程池参数？
 
@@ -659,21 +659,25 @@ nterruptIdleWorkers遍历workers中所有的工作线程，若线程没有被中
 
 动态设置线程池参数，我们主要关注的是核心线程数corePoolSize、最大线程数maximumPoolSize、以及队列容量。
 
-而JDK也提供了相应的方法：
-setCorePoolSize(int corePoolSize)方法可以动态调整核心线程数。
+而JDK也提供了相应的方法：**setCorePoolSize**(int corePoolSize)方法可以动态调整核心线程数。
 ```java
     public void setCorePoolSize(int corePoolSize) {
         if (corePoolSize < 0)
             throw new IllegalArgumentException();
+        //计算设置的值与当前的值的差值
         int delta = corePoolSize - this.corePoolSize;
         this.corePoolSize = corePoolSize;
+        //如果当前活跃的线程数大于所要设置的数，则
         if (workerCountOf(ctl.get()) > corePoolSize)
+            //尝试中断空闲的线程。
             interruptIdleWorkers();
         else if (delta > 0) {
             // We don't really know how many new threads are "needed".
             // As a heuristic, prestart enough new workers (up to new
             // core size) to handle the current number of tasks in
             // queue, but stop if queue becomes empty while doing so.
+            //上面这段翻译过来就是，不知道到底有多少新的线程是需要的，那么预测一下，就先
+            //预先启动足够的线程（接近新的核心线程数）去处理当前队列里面的任务。
             int k = Math.min(delta, workQueue.size());
             while (k-- > 0 && addWorker(null, true)) {
                 if (workQueue.isEmpty())
@@ -682,6 +686,156 @@ setCorePoolSize(int corePoolSize)方法可以动态调整核心线程数。
         }
     }
 ```
+
+同理最大线程数也是可以设置的
+
+```java
+public void setMaximumPoolSize(int maximumPoolSize) {
+    if (maximumPoolSize <= 0 || maximumPoolSize < corePoolSize)
+        throw new IllegalArgumentException();
+    this.maximumPoolSize = maximumPoolSize;
+    //如果线程数大于新设置的最大线程数，则中断空闲的线程。
+    if (workerCountOf(ctl.get()) > maximumPoolSize)
+        interruptIdleWorkers();
+}
+```
+
+但是队列的长度我们是无法设置的，JDK并没有内置这个方法，但是我们可以自定义一个队列，然后提供设置capacity的方法。美团也的确是这么做的。
+
+![](threadpool/image-20200426200223843.png)
+
+然而，要想使线程池动态化并且健壮性强的话，光支持动态调参，是不够的。配套的应该还有
+
+1. 任务监控，能够监控线程池任务执行情况、最大任务执行时间、平均执行时间等等
+2. 负载告警，当线程池队列中任务积压到一定值时能够通知到运维。
+3. 操作监控，创建、修改和删除线程池都要有通知机制
+4. 操作日志
+5. 权限校验等，并不是所有人都能够改线程池参数。
+
+总之，美团这篇文章，还是给我们提供了很好的思路。并且我们在业务中也是这么实现的，虽然监控还不够到位，但是对于处理报表等相关复杂业务也是给了隐藏入口能够动态调参。
+
+### 其他框架线程池如何实现？
+
+对于之前的文章，我最后都喜欢归纳一下相关知识在其他地方的扩展点，线程池这篇也不例外，让我们瞅瞅其他框架是如何对实现自定义线程池的。这里以Dubbo/Tomcat/Spring为例子，这个也是手边最常用的框架。
+
+#### Tomcat
+
+我们可以看到tomcat下server.xml里面是可以配置线程池的。
+
+![](threadpool/image-20200426202904722.png)
+
+具体参数含义是
+
+![http://tomcat.apache.org/tomcat-9.0-doc/config/executor.html](threadpool/image-20200426203201866.png)
+
+maxThreads，线程池最大 的线程数量，默认200。
+
+minSpareThreads：永远活动的线程数量，默认25。
+
+className：默认实现是 org.apache.catalina.core.StandardThreadExecutor
+
+我们从代码里面看下默认实现是如何构造线程池的。
+
+![org.apache.catalina.core.StandardThreadExecutor#startInternal](threadpool/image-20200426204207159.png)
+
+可以看出，TaskQueue继承于LinkedBlockingQueue。而默认队列容量为Integer.MAX_VALUE。
+
+> ```java
+> taskqueue = new TaskQueue(maxQueueSize);
+> ```
+
+![](threadpool/image-20200426203738743.png)
+
+```java
+TaskThreadFactory tf = new TaskThreadFactory(namePrefix,daemon,getThreadPriority());
+```
+
+然后自定义 实现线程工程，传入参数：
+
+1. namePrefix：名称前缀，默认是“tomcat-exec-”
+2. daemon: 是否以守护线程模式启动。默认是true
+3. priority: 线程等级，默认为5
+
+```java
+executor = new ThreadPoolExecutor(getMinSpareThreads(), getMaxThreads(), maxIdleTime, TimeUnit.MILLISECONDS,taskqueue, tf);
+```
+
+然后设置线程池参数，corePoolSize=25，maximumPoolSize=200，keepAliveTime=60000
+
+```java
+if (prestartminSpareThreads) {
+    executor.prestartAllCoreThreads();
+}
+```
+
+如果允许预先启动所有核心线程池。但是这个就算设置为false，似乎也没啥子用。因为构造函数时，已经都调用了prestartAllCoreThreads方法了。所以这里不知道是bug还是啥。
+
+![image-20200426204711278](threadpool/image-20200426204711278.png)
+
+```java
+taskqueue.setParent(executor);
+```
+
+这里似乎与JDK线程池不太一样。这个参数有啥用？
+
+既然是设置队列的把线程池设置为队列的parent，那我们就进去队列瞅瞅。我们都知道，线程池跟队列打交道的是执行execute时workQueue.offer，getTask时的take或者offer。
+
+那么就看看这个TaskQueue的这几个方法实现如何？
+
+> org.apache.tomcat.util.threads.TaskQueue#offer
+
+```java
+@Override
+public boolean offer(Runnable o) {
+  //如果parten为空，则直接加入
+    if (parent==null) return super.offer(o);
+    //走到这里，说明运行时线程数肯定大于等于核心线程数，因为都已经往队列里面加数据了
+    //所以这里肯定是不成立的，getPoolSize肯定会小于getMaximumPoolSize的
+    if (parent.getPoolSize() == parent.getMaximumPoolSize()) return super.offer(o);
+  	//getSubmittedCount 获取的是当前已经提交但是还未完成的任务的数量
+    //其值是队列中的数量加上正在运行的任务的数量。
+    //如果已提交但未完成的数量小于活动线程数，则正常加入，既然有空闲的线程，那么就直接加入队列
+    if (parent.getSubmittedCount()<=(parent.getPoolSize())) return super.offer(o);
+   //如果运行中的线程小于最大线程数，就返回false。
+    //作者注释是：if we have less threads than maximum force creation of a new thread
+    //意思是，如果小于最大线程数，则强制创建新的线程！！！！
+    if (parent.getPoolSize()<parent.getMaximumPoolSize()) return false;
+    //if we reached here, we need to add it to the queue
+    return super.offer(o);
+}
+```
+
+这里看到，只要线程数没有达到最大线程数，则offer返回false。那就直接走到了最后一个if，addWorker了。
+
+由此可以得出，Tomcat处理大多数是IO密集型任务，为了让任务尽快完成，**Tomcat的线程池一直增加线程，直到最大线程数，然后才放入队列。**
+
+只能一个字形容，吊~！
+
+![](threadpool/image-20200426210254698.png)
+
+#### Dubbo
+
+Dubbo中的线程池也是这个思想。如果当前线程池数小于最大线程数时，不是加入队列，而是新增线程去执行任务。
+
+![](threadpool/640-1587906935271.png)
+
+![](threadpool/640-1587907007892.png)
+
+但是Dubbo不同的是，如果线程数达到最大线程数后，队列也满了，那么要执行拒绝策略，但是再拒绝策略前再重试一下，再次offer一下。
+
+#### Spring
+
+ThreadPoolTaskExecutor是Spring 提供的线程池，可以作为Bean注入到容器中，同时增加了 submitListenable 方法，该方法返回 ListenableFuture 接口对象，增加了线程执行完毕后成功和失败的回调方法。从而避免了 Future 需要以阻塞的方式调用 get，然后再执行成功和失败的方法。带来的好处就是异步，不需要阻塞当前线程，从而可以提高系统的吞吐量。![](threadpool/image-20200426212402444.png)
+
+
+
+### 总结
+
+线程池先学到这了，还有很多没有提到，先歇歇，下次下次~~~学无止境！
+
+
+
+
 
 
 >参考列表
