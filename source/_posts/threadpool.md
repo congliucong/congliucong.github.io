@@ -426,6 +426,26 @@ final void runWorker(Worker w) {
 }
 ```
 
+更新：当看到AQS时，发现了一个隐藏的知识点，没有关注到。
+
+```java
+if ((runStateAtLeast(ctl.get(), STOP) || (Thread.interrupted() &&  runStateAtLeast(ctl.get(), STOP))) &&
+    !wt.isInterrupted())
+    wt.interrupt();
+```
+
+注释里写到：如果线程池正在停止，则保证线程是中断状态。如果线程池不是正在停止，要保证线程不是中断状态，我们看是如何做到的.
+
+>1.(runStateAtLeast(ctl.get(), STOP) || ( Thread.interrupted() && runStateAtLeast(ctl.get(), STOP)) )
+
+>2.!wt.isInterrupted()
+
+1. 如果(runStateAtLeast(ctl.get(), STOP)为true，说明**线程池处于stop状态**，那么1为true，如果wt不是中断状态，则2条件为true，则执行 wt.interrupt()，从而将线程状态置为中断。
+
+2. 如果(runStateAtLeast(ctl.get(), STOP)为false，会执行 ***( Thread.interrupted() && runStateAtLeast(ctl.get(), STOP))*** ，说明**线程池不是stop状态**，那么Thread.interrupted()判断是否中断后，会**复位中断状态**。如果线程为中断状态，那么 ***( Thread.interrupted() && runStateAtLeast(ctl.get(), STOP))*** 会为true，但是执行完这句话之后，线程状态就变成了非中断状态，所以此时 !wt.isInterrupted()就是true，那么整体条件就是false &&  true == false，就不会执行 wt.interrupt();
+
+以上，从而满足了注释里面要求的 **如果线程池正在停止，则保证线程是中断状态；如果线程池不是正在停止，要保证线程不是中断状态**。
+
 ### getTask方法
 
 getTask方法是从队列中获取任务。
