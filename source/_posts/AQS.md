@@ -1,5 +1,5 @@
 ---
-title: Java基础之AQS(一)ReentrantLock
+title: Java基础之JUC(一)ReentrantLock
 date: 2020-04-26 21:39:24
 tags: Java
 categories: Java基础

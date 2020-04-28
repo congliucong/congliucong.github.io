@@ -1,5 +1,5 @@
 ---
-title: Java基础之AQS(二)CountDownLatch
+title: Java基础之JUC(二)CountDownLatch
 date: 2020-04-27 22:25:14
 tags: Java
 categories: Java基础
