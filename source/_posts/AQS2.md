@@ -9,6 +9,8 @@ categories: Java基础
 
 感谢末尾参考的文章，知道怎么学习源码以及不懂的地方去寻找答案。学无止境，奋斗奋斗![](AQS2/009ADDC0.png)
 
+<!-- more -->
+
 ### CountDownLatch原理
 
 CountDownLatch也是JUC包下的一个并发工具，主要是用在某个线程等待其他线程全部执行完毕后再执行的场景。
@@ -191,7 +193,6 @@ private void setHeadAndPropagate(Node node, int propagate) {
 
 ```java
 private void doReleaseShared() {
-
     for (;;) {
         //头结点
         Node h = head;
@@ -218,8 +219,78 @@ private void doReleaseShared() {
     }
 }
 ```
+我们来分析下这种情况，就可以明白这两个if条件分别什么时候执行 以及 最后循环退出的条件 h==head怎么理解？
+![](AQS2/1588042470.jpg)
+假设同步队列里面现在有A---->B---->C三个节点。
+我们在第一篇文章里讲过 当C节点入队后，会执行 shouldParkAfterFailedAcquire判断是否需要中断，这里会把自己的前驱节点状态都设置为SIGNAL，所以此时A B 的状态都为SIGNAL。如果此时A获取到锁，会执行doReleaseShared()方法唤醒B。
+![](AQS2/1588044916.jpg)
+因为A节点的状态是SIGNAL，所以会执行第一个判断。
 
-我们在第一篇文章里讲过 如果获取锁不成功，会执行 shouldParkAfterFailedAcquire判断是否需要中断，这里会把 状态都设置为SIGNAL，然后再次循环判断是否阻塞。第一次进来之后，把自己设置为SIGNAL，第二次再次循环，如果锁释放了，则进入到获取锁 ，然后把自己设置头节点，然后唤醒头结点操作。
+```java
+    if (ws == Node.SIGNAL) {
+        if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
+            continue;            // loop to recheck cases
+        unparkSuccessor(h);
+    }
+```
+此时，B节点也很快获得共享锁，成为了新的头节点。同时调用doReleaseShared去唤醒C。
+![](AQS2/1588045193.jpg)
+但是此时A的循环有可能还没有结束，当运行到if(h == head)发现头结点已经发生了变化，因此会继续循环，同时线程B也在继续循环。
+因此，我看别人的博客把这形容为“调用风暴”，大量线程都在执行doReleaseShared，极大的加速了唤醒后续节点的速度，又因为唤醒前是通过compareAndSetWaitStatus(h, Node.SIGNAL, 0)cas操作保证了同时唤醒一个节点，只有一个线程能够成功。
 
-那这里 doReleaseShared为什么要先把状态设置为 0，然后唤醒自己的下一个节点后，
+当C成为头结点时，队列中已经没有其他节点了，自己成为最后一个节点
+![](AQS2/1588045602.jpg)
+此时C节点的状态为0，所以会执行第二个else if
+```java
+    else if (ws == 0 &&
+             !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+        continue;   
+```
+将节点状态设置为PROPAGATE（-3）状态。如果这一步失败，说明在执行的过程中，ws不等于0了，说明有新的节点入队，把自己的状态修改了Node.SIGNAL。因此会continue继续循环，下次循环中会把新入队但准备挂起的线程唤醒。这种极端的情况作者也能考虑到，可以看出对于AQS的优化到了多么恐怖的地步。又要说一句：![](AQS2/00F43351.jpg)
 
+#### countDown方法
+
+```java
+    public void countDown() {
+        sync.releaseShared(1);
+    }
+```
+调用Sync内部的releaseShared(1)方法。
+
+```java
+    public final boolean releaseShared(int arg) {
+       //尝试释放共享节点，如果成功则释放和唤醒
+        if (tryReleaseShared(arg)) {
+            doReleaseShared();
+            return true;
+        }
+        return false;
+    }
+```
+这里先调用tryReleaseShared(arg)尝试释放节点，成功的话调用doReleaseShared();已经在上面分析过了。
+
+#### tryReleaseShared
+
+```java
+    protected boolean tryReleaseShared(int releases) {
+        // Decrement count; signal when transition to zero
+        for (;;) {
+            int c = getState();
+            //如果等于0，说明不需要释放
+            if (c == 0)
+                return false;
+            //将计数器减1
+            int nextc = c-1;
+            //最后返回是否等于0。等于0说明释放成功
+            if (compareAndSetState(c, nextc))
+                return nextc == 0;
+        }
+    }
+}
+```
+
+### 总结
+
+CountDownLatch是通过AQS的共享模式实现的。使用state作为计数器。
+await方法获取共享锁，获取成功后唤醒后续节点，并传播下去。失败则入队。
+countdown方法将state减1，等于0后则唤醒节点。不等于0则不释放锁，队列节点继续阻塞。
