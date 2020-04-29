@@ -172,3 +172,23 @@ catch (InterruptedException ie) {
 ```
 
 什么时候这个if (g == generation && ! g.broken)条件成立？
+
+这说明了等待过程中，线程被中断了，但是中断的线程还是当前这个年代的，并且没有broken，说明是其他线程中断了当前线程。
+
+而如果中断的线程所对应的不是这个年代的，此时不会影响当前这代的栅栏的执行，所以仅需要将当前线程做个中断标记即Thread.currentThread().interrupt();从而继续循环阻塞。
+
+### 总结
+
+CyclicBarrier的计数器可以重复使用，使用reset()方法即可，但CountDownLatch只能使用一次。
+
+CyclicBarrier使用多个线程互相等待，而CountDownLatch用于一个或者多个线程等待一组事件的完成。
+
+CyclicBarrier具体应用场景，用于将任务拆分多个子任务，多线程完成，等所有子任务结束后，再合并成最红结果，例如统计多个excel的数据的总和、统计多部门的数据和等等。
+
+
+
+> 参考列表
+>
+> 1. http://cmsblogs.com/?p=2241
+> 2. https://blog.csdn.net/qq_38293564/article/details/80558157
+
