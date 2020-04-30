@@ -9,6 +9,8 @@ categories: Java基础
 
 趁热打铁，岂不美滋滋？![](threadLocal/0066C1B9.png)
 
+<!-- more -->
+
 ## 什么是ThreadLocal
 
 ```java
@@ -409,15 +411,188 @@ private void remove(ThreadLocal<?> key) {
 
 同样可以看出，当清除掉待取出的元素后，也会调用***expungeStaleEntry***去清理脏entry。
 
+我们先分析 **cleanSomeSlot** 方法：
+
+当调到这个方法时，说明定位到i位置的元素为空，可以直接插入。
+
+```java
+        private boolean cleanSomeSlots(int i, int n) {
+            boolean removed = false;
+            Entry[] tab = table;
+            int len = tab.length;
+            do {
+                i = nextIndex(i, len);
+                Entry e = tab[i];
+                if (e != null && e.get() == null) {
+                    n = len;
+                    removed = true;
+                    i = expungeStaleEntry(i);
+                }
+            } while ( (n >>>= 1) != 0);
+            return removed;
+        }
+```
+
+首先，要明确的是，
+
+1. 参数i位置的元素肯定不是脏entry，因为刚刚已经插入了。
+2. 参数n首次传入的是已经插入entry的个数，这里时用来 **scan control**扫描控制，因为每次循环都要执行 **n >>>= 1**，因此会执行log2(n)次，当遇到脏entry后，n会重置为数组的长度。
+
+所以该方法的逻辑是：
+
+从i位置的下个元素开始查找，直到遇到空元素位置结束。当遇到脏entry之后，先将n重置为数组长度，然后调用 **expungeStaleEntry**方法清除元素。这样就能扩大扫描范围。
+
+接着分析 **expungeStaleEntry**方法是怎么清理脏entry的。这个方法在上面已经分析过了，这里再将贴一下代码。
+
+staleSlot是上面方法传入的脏元素的下标。
+
+```java
+        private int expungeStaleEntry(int staleSlot) {
+            Entry[] tab = table;
+            int len = tab.length;
+
+            // 首先清楚staleSlot位置的元素
+            tab[staleSlot].value = null;
+            tab[staleSlot] = null;
+            size--;
+
+            // Rehash until we encounter null
+            Entry e;
+            int i;
+            //继续往后环形继续查找，直到遇到table[i] == null 时结束
+            for (i = nextIndex(staleSlot, len);
+                 (e = tab[i]) != null;
+                 i = nextIndex(i, len)) {
+                ThreadLocal<?> k = e.get();
+                // 如果在向后搜索的过程中，再次发现脏entry，那么再次将其清楚
+                if (k == null) {
+                    e.value = null;
+                    tab[i] = null;
+                    size--;
+                } else {
+                    //处理rehash情况
+                    int h = k.threadLocalHashCode & (len - 1);
+                    if (h != i) {
+                        tab[i] = null;
+
+                        // Unlike Knuth 6.4 Algorithm R, we must scan until
+                        // null because multiple entries could have been stale.
+                        while (tab[h] != null)
+                            h = nextIndex(h, len);
+                        tab[h] = e;
+                    }
+                }
+            }
+            return i;
+        }
+```
+
+所以cleanSomeSlot 和 expungeStaleEntry组合起来看，就是：
+
+从插入位置开始为起点，开始查找脏entry，刚开始查找次数是 log2(size)，如果整个过程没有脏entry，那么就退出循环。
+如果找到脏entry，那么就调用expungeStaleEntry清除脏entry，并且返回下一个元素null的位置i，作为搜索起点，将n重置为数组长度，再次扩大搜索范围继续查找脏entry。
+
+我们以下图为例，来说明这个过程
+![https://www.jianshu.com/p/dde92ec37bd1](threadLocal/1588218325.jpg)
+
+1. 如果所示，当前插入元素在index 为 1 的位置，size 等于已插入元素10，第一趟搜索过程中 i = nextIndex(i, len);所以i为2，此时table[2]为null，所以第一趟没有发现脏entry，跳出expungeStaleEntry方法，返回i 等于2。
+2. 第二趟i 指向3的位置，发现table[3] != null，但是entry的key为null，所以是脏entry，因此，将n重置为数组长度，然后调用 expungeStaleEntry方法清除该元素。expungeStaleEntry方法会先将i为3的元素请出，然后从i等于3的位置开始继续向后环形搜索，i 等于 4，5都为脏entry，清除后继续，到i = 6，不是脏元素向后，当i =7后，此处元素为null，因此返回7。
+3. cleanSomeSlots方法则从7处开始继续扩大搜索范围（n变成数组长度）继续向后环形搜索。直到所有元素都不为脏entry，然后结束退出。
+
+
+我们最后看 **replaceStaleEntry** 方法：
+
+这个方法是查找到脏entry后，将脏entry替换。
 
 
 
+```java
+        private void replaceStaleEntry(ThreadLocal<?> key, Object value,
+                                       int staleSlot) {
+            Entry[] tab = table;
+            int len = tab.length;
+            Entry e;
+
+            // 向前找到第一个脏entry。
+            int slotToExpunge = staleSlot;
+            for (int i = prevIndex(staleSlot, len);
+                 (e = tab[i]) != null;
+                 i = prevIndex(i, len))
+                if (e.get() == null)
+                    slotToExpunge = i;
+
+            // 再往后环形查找
+            for (int i = nextIndex(staleSlot, len);
+                 (e = tab[i]) != null;
+                 i = nextIndex(i, len)) {
+                ThreadLocal<?> k = e.get();
+
+                   // 如果找到key相同的entry,那么就用待插入entry替换，
+                   //并且和脏的entry进行交换
+                    e.value = value;
+
+                    tab[i] = tab[staleSlot];
+                    tab[staleSlot] = e;
+
+                    // 如果在查找过程中没有发现脏entry，
+                    //那么就用当前位置作为cleanSomeSlots的起点
+                    if (slotToExpunge == staleSlot)
+                        slotToExpunge = i;
+                    //搜索脏entry进行清理 
+                    cleanSomeSlots(expungeStaleEntry(slotToExpunge), len);
+                    return;
+                }
+
+                // 如果在查找过程中没有找到可以覆盖的entry，那么就把新的entry插入到脏entry的位置
+                if (k == null && slotToExpunge == staleSlot)
+                    slotToExpunge = i;
+            }
+
+            // If key not found, put new entry in stale slot
+            tab[staleSlot].value = null;
+            tab[staleSlot] = new Entry(key, value);
+
+            // If there are any other stale entries in run, expunge them
+            if (slotToExpunge != staleSlot)
+                cleanSomeSlots(expungeStaleEntry(slotToExpunge), len);
+        }
+```
 
 
+首先明确进入这个方法，说明计算出数组下标位置出现了脏entry。
 
+我们可以分这几种情况进行讨论：
 
+1. 前面有脏key。
+   1. 向后环形找到相同key的entry。如下图所示，向前找到脏entry直到table[i]为null为止，将数组下标记录给slotToExpunge。然后向后环形查找，找到可以覆盖的entry，替换value，然后将该元素和staleSlot位置上的脏entry，交换之后脏entry就更换到了后面的位置。最后使用cleanSomeSlots方法从slotToExpunge位置开始清理脏entry。
+![https://www.jianshu.com/p/dde92ec37bd1](2615789-ebc60645134a0342.webp)
 
+   2.向后没有找到相同key的entry。如下图所示，那只能在staleSlot位置插入新entry,然后使用cleanSomeSlots方法从slotToExpunge位置开始清理脏entry。
+![https://www.jianshu.com/p/dde92ec37bd1](2615789-423c8c8dfb2e9557.webp)
 
+2. 前面没有脏entry
+   1. 向后环形查找到可以覆盖的entry。如下图，因为向前没有找到脏entry，因此slotToExpunge位置依然等于staleSlot。然后向后for循环环形查找，找到了相同key的entry，那么替换value，将元素与staleSlot位置的脏entry替换，通过slotToExpunge = i;最后使用cleanSomeSlots方法从slotToExpunge位置开始清理脏entry。
+![https://www.jianshu.com/p/dde92ec37bd1](2615789-018d077773a019dc.webp)
+   2. 向后环形没有查找到可以覆盖的entry。那么将向后查找第一个脏entry的元素位置赋值给slotToExpunge，最后使用cleanSomeSlots方法从slotToExpunge位置开始清理脏entry。
+>                if (k == null && slotToExpunge == staleSlot)
+                    slotToExpunge = i;
+![https://www.jianshu.com/p/dde92ec37bd1](2615789-eee96f3eca481ae0.webp)
+
+因此可以总结，在threadLocal的生命周期里，get set remove都会通过expungeStaleEntry，cleanSomeSlots,replaceStaleEntry这三个方法清理掉key为null的脏entry。
+
+在我们日常使用中，我们也要在每次使用完thredlocal后，调用其remove方法，清除数据。
+
+## ThreadLocal总结
+
+ThreadLocal不是用来解决共享对象多线程访问的问题，而是主要用来解决线程内部共享对象共享的问题，也就是说每个线程都有自己单独的实例，这个实例只会在线程内部共享，而不会在线程间共享。
+
+实现原理是每个线程实例都存储自己的threadLocalMap，而threadLocalMap底层数据结构是数组，元素为Entry，Entry继承WeakReference，key记录threadlocal实例，而value则存储实例对象。
+
+threadLocal会有内存泄漏的问题，虽然threadlocal类的get set remove方法都会去主动清理脏entry，但是我们实际应用中使用的线程池，线程是不会主动结束，所以也会出现内存泄漏问题。
+
+## ThreadLocal实际应用
+
+1. 数据库连接池
 
 
 
