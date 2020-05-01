@@ -23,14 +23,14 @@
 
   <meta name="description" content="前面分析了Synchronized关键字以及CAS无锁机制。今天一起来了解volatile，先讲述一些相关JVM的知识，一并作为笔记记录下来。大部分内容来自《深入理解Java虚拟机》第三版，这本书也应该是每个Javaer案头的必备书了吧。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JVM之Java线程模型">
+<meta property="og:title" content="深入JVM之Java线程模型">
 <meta property="og:url" content="http://yoursite.com/2020/01/18/volatile/index.html">
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="前面分析了Synchronized关键字以及CAS无锁机制。今天一起来了解volatile，先讲述一些相关JVM的知识，一并作为笔记记录下来。大部分内容来自《深入理解Java虚拟机》第三版，这本书也应该是每个Javaer案头的必备书了吧。">
 <meta property="og:image" content="http://yoursite.com/2020/01/18/volatile/image-20200501120518224.png">
 <meta property="og:image" content="http://yoursite.com/2020/01/18/volatile/image-20200501112658155.png">
 <meta property="article:published_time" content="2020-01-18T15:04:22.000Z">
-<meta property="article:modified_time" content="2020-05-01T04:05:56.661Z">
+<meta property="article:modified_time" content="2020-05-01T06:23:50.613Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
@@ -49,7 +49,7 @@
   };
 </script>
 
-  <title>JVM之Java线程模型 | Lcccc</title>
+  <title>深入JVM之Java线程模型 | Lcccc</title>
   
 
 
@@ -222,7 +222,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          JVM之Java线程模型
+          深入JVM之Java线程模型
         </h1>
 
         <div class="post-meta">
@@ -429,7 +429,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-count">24</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -478,12 +478,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">171k</span>
+    <span title="站点总字数">174k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">2:35</span>
+    <span title="站点阅读时长">2:38</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>

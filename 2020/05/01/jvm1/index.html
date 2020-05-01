@@ -21,29 +21,38 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="好好学习，天天向上">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Lcccc">
-<meta property="og:url" content="http://yoursite.com/index.html">
+  <meta name="description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!  JVM怎么判断哪些对象应该回收？引用计数法。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入JVM之辣鸡回收">
+<meta property="og:url" content="http://yoursite.com/2020/05/01/jvm1/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="好好学习，天天向上">
+<meta property="og:description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!  JVM怎么判断哪些对象应该回收？引用计数法。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/00F2E65F.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501152633887.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501173048704.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501175338302.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501175228964.png">
+<meta property="article:published_time" content="2020-05-01T06:23:22.000Z">
+<meta property="article:modified_time" content="2020-05-01T10:11:58.481Z">
 <meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/01/jvm1/00F2E65F.png">
 
-<link rel="canonical" href="http://yoursite.com/">
+<link rel="canonical" href="http://yoursite.com/2020/05/01/jvm1/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-Hans'
   };
 </script>
 
-  <title>Lcccc</title>
+  <title>深入JVM之辣鸡回收 | Lcccc</title>
   
 
 
@@ -196,9 +205,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
@@ -214,10 +224,9 @@
       <meta itemprop="name" content="Lcccc">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/01/jvm1/" class="post-title-link" itemprop="url">深入JVM之辣鸡回收</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          深入JVM之辣鸡回收
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -277,7 +286,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。</p>
+        <p>之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。</p>
 <p>go fight!!! <img src="/2020/05/01/jvm1/00F2E65F.png" alt></p>
 <h2 id="JVM怎么判断哪些对象应该回收？"><a href="#JVM怎么判断哪些对象应该回收？" class="headerlink" title="JVM怎么判断哪些对象应该回收？"></a>JVM怎么判断哪些对象应该回收？</h2><h3 id="引用计数法"><a href="#引用计数法" class="headerlink" title="引用计数法"></a>引用计数法</h3><p>。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为0时，代表对象不再使用。但是引用计数器最大的问题是，不能解决<strong>循环依赖</strong>的问题。</p>
 <p><img src="/2020/05/01/jvm1/image-20200501152633887.png" alt></p>
@@ -348,439 +357,40 @@
 <p>1.《深入理解Java虚拟机》 第三版 周志明</p>
 </blockquote>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
+          <div class="post-tags">
+              <a href="/tags/Java-JVM/" rel="tag"># Java JVM</a>
+          </div>
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/29/threadLocal/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/29/threadLocal/" class="post-title-link" itemprop="url">Java基础之ThreadLocal(一)</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-29 20:28:31" itemprop="dateCreated datePublished" datetime="2020-04-29T20:28:31+08:00">2020-04-29</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/04/29/threadLocal/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/29/threadLocal/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>16k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>14 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>最近源码，不少地方都用到了ThreadLocal，正好趁机来总结一波ThreadLocal相关的知识点。</p>
-<p>趁热打铁，岂不美滋滋？<img src="/2020/04/29/threadLocal/0066C1B9.png" alt></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/29/threadLocal/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
-    </div>
 
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/29/AQS6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/29/AQS6/" class="post-title-link" itemprop="url">Java基础之JUC(六)CyclicBarrier</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-29 15:54:03" itemprop="dateCreated datePublished" datetime="2020-04-29T15:54:03+08:00">2020-04-29</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/04/29/AQS6/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/29/AQS6/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>继续JUC之旅，今天来瞅瞅CyclicBarrier。光看名字，有两重含义：1.循环 2.栅栏。所以CyclicBarrier适合于那些多个线程互相等待，等到都到栅栏处了，再一起放行，并且这个栅栏还可以循环利用。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/29/AQS6/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
+      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
   
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/29/AQS5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/29/AQS5/" class="post-title-link" itemprop="url">Java基础之JUC(五)Semaphore</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-29 14:05:01" itemprop="dateCreated datePublished" datetime="2020-04-29T14:05:01+08:00">2020-04-29</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/04/29/AQS5/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/29/AQS5/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>今天继续学习JUC下的工具类——Semaphore。Semaphore是一个信号计数量，与CountDownLatch一样，也是一个共享锁。不同的是，CountDownLatch是一个或多个线程await，其他线程countdown，当state为0后，await的线程继续执行，即一个线程或多个线程需要等待其他线程执行完之后才能执行。而Semaphore维护着一个许可集，每个线程acquire成功，许可数减1，然后执行程序，执行完毕后release，如果acquire失败，说明许可证没有了，因此阻塞，等待许可重新释放。类似于数据库连接池。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/29/AQS5/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/28/AQS4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/28/AQS4/" class="post-title-link" itemprop="url">Java基础之JUC(四)ReentrantReadWriteLock</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-28 23:26:05" itemprop="dateCreated datePublished" datetime="2020-04-28T23:26:05+08:00">2020-04-28</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/04/28/AQS4/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/28/AQS4/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>前面介绍了AQS的共享模式和独占模式，以及Condition功能，共享锁以CountDownLatch为例，排他锁则是以ReentrantLock为例。这篇文章就一起学习ReentrantReadWriteLock，在ReentrantReadWriteLock中包括读锁和写锁，读锁可以多线程访问，属于共享锁，写锁属于排它锁，更改的时候不允许其他线程访问。同时写锁也提供了Condition机制。不允许读写共存，但是可以读读共存。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/28/AQS4/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-
-  
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
-  </nav>
 
 
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -827,6 +437,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#JVM怎么判断哪些对象应该回收？"><span class="nav-number">1.</span> <span class="nav-text">JVM怎么判断哪些对象应该回收？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#引用计数法"><span class="nav-number">1.1.</span> <span class="nav-text">引用计数法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可达性分析算法"><span class="nav-number">1.2.</span> <span class="nav-text">可达性分析算法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#那什么对象可以称为GC-Roots"><span class="nav-number">2.</span> <span class="nav-text">那什么对象可以称为GC Roots?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#那既然谈到引用，有几种引用？"><span class="nav-number">3.</span> <span class="nav-text">那既然谈到引用，有几种引用？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#被标记为不可达对象，就一定会被回收吗？"><span class="nav-number">4.</span> <span class="nav-text">被标记为不可达对象，就一定会被回收吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#有哪些常见的垃圾收集算法？"><span class="nav-number">5.</span> <span class="nav-text">有哪些常见的垃圾收集算法？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#出现跨代引用JVM怎么解决？"><span class="nav-number">6.</span> <span class="nav-text">出现跨代引用JVM怎么解决？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可达性分析是怎样实现的？"><span class="nav-number">7.</span> <span class="nav-text">可达性分析是怎样实现的？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
