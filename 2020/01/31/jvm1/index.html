@@ -21,25 +21,25 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!  JVM怎么判断哪些对象应该回收？引用计数法。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为">
+  <meta name="description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!">
 <meta property="og:type" content="article">
 <meta property="og:title" content="深入JVM之辣鸡回收">
-<meta property="og:url" content="http://yoursite.com/2020/05/01/jvm1/index.html">
+<meta property="og:url" content="http://yoursite.com/2020/01/31/jvm1/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!  JVM怎么判断哪些对象应该回收？引用计数法。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/00F2E65F.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501152633887.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501173048704.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501175338302.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm1/image-20200501175228964.png">
-<meta property="article:published_time" content="2020-05-01T06:23:22.000Z">
-<meta property="article:modified_time" content="2020-05-01T10:11:58.481Z">
+<meta property="og:description" content="之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。 go fight!!!">
+<meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/00F2E65F.png">
+<meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501152633887.png">
+<meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501173048704.png">
+<meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501175338302.png">
+<meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501175228964.png">
+<meta property="article:published_time" content="2020-01-31T06:23:22.000Z">
+<meta property="article:modified_time" content="2020-05-01T11:21:30.742Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/05/01/jvm1/00F2E65F.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/01/31/jvm1/00F2E65F.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/05/01/jvm1/">
+<link rel="canonical" href="http://yoursite.com/2020/01/31/jvm1/">
 
 
 <script id="page-configurations">
@@ -212,7 +212,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/01/jvm1/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/31/jvm1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -235,7 +235,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-05-01 14:23:22" itemprop="dateCreated datePublished" datetime="2020-05-01T14:23:22+08:00">2020-05-01</time>
+              <time title="创建时间：2020-01-31 14:23:22" itemprop="dateCreated datePublished" datetime="2020-01-31T14:23:22+08:00">2020-01-31</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -256,8 +256,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/05/01/jvm1/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/01/jvm1/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/01/31/jvm1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/01/31/jvm1/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -287,9 +287,11 @@
 
       
         <p>之前在分析volatile关键字的时候，了解过JVM的内存模型。现在我们系统来学习一下JVM相关的知识，然后整理一下工作中JVM调优的实际经验，作为记录。这篇内容我们主要来学习垃圾回收相关算法，我们换个角度，以问题的形式来进行。</p>
-<p>go fight!!! <img src="/2020/05/01/jvm1/00F2E65F.png" alt></p>
+<p>go fight!!! <img src="/2020/01/31/jvm1/00F2E65F.png" alt></p>
+<a id="more"></a>
+
 <h2 id="JVM怎么判断哪些对象应该回收？"><a href="#JVM怎么判断哪些对象应该回收？" class="headerlink" title="JVM怎么判断哪些对象应该回收？"></a>JVM怎么判断哪些对象应该回收？</h2><h3 id="引用计数法"><a href="#引用计数法" class="headerlink" title="引用计数法"></a>引用计数法</h3><p>。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为0时，代表对象不再使用。但是引用计数器最大的问题是，不能解决<strong>循环依赖</strong>的问题。</p>
-<p><img src="/2020/05/01/jvm1/image-20200501152633887.png" alt></p>
+<p><img src="/2020/01/31/jvm1/image-20200501152633887.png" alt></p>
 <p>这里A B都可以被回收，但是因为互相引用，导致他们各自计数器为1，不能被回收。</p>
 <h3 id="可达性分析算法"><a href="#可达性分析算法" class="headerlink" title="可达性分析算法"></a>可达性分析算法</h3><p>通过一系列称为’GC Roots‘ 的根对象作为起始节点集，从根节点开始，根据引用关系向下搜索，搜索过程所走过的路称为引用链，如果某个对象到GC Roots间没有任何引用链相连，则证明此对象是不可能被使用的。</p>
 <h2 id="那什么对象可以称为GC-Roots"><a href="#那什么对象可以称为GC-Roots" class="headerlink" title="那什么对象可以称为GC Roots?"></a>那什么对象可以称为GC Roots?</h2><ol>
@@ -327,7 +329,7 @@
 <li><strong>黑色</strong>。表示对象已经被垃圾收集器访问过，且这个对象的所有引用都已经扫描过。</li>
 <li><strong>灰色</strong>。表示对象已经被垃圾收集器访问过，但这个对象上至少还存在一个引用没有被扫描过。</li>
 </ol>
-<p><img src="/2020/05/01/jvm1/image-20200501173048704.png" alt></p>
+<p><img src="/2020/01/31/jvm1/image-20200501173048704.png" alt></p>
 <p>因此可以看出，灰色是黑色与白色的中间对象，不可能存在黑色对象直接指向某个白色对象。当标记结束后，就只会存在黑色或者白色的对象。</p>
 <p><strong>但如果用户线程和收集器是并发工作的呢？</strong>即收集器在对象图上标记颜色，同时用户线程在修改引用关系—–即修改对象图的结构。这样会出现两种情况，一种是把<strong>原本消亡的对象错误标记为存活</strong>（即标记时对象还存活，但是标记过后，对象的引用就消失了，此时对象应该是死亡的，但是仍然标记为存活），而是<strong>原本存活的对象被标记为了死亡</strong>（这种情况出现在标记的时候对象死亡，但是标记过后，有其他对象重新引用了该对象，此时对象是存活状态，但是却被标记为了死亡），这种情况是不可接受的。</p>
 <p><strong>那应该怎么解决呢</strong>？</p>
@@ -336,8 +338,8 @@
 <li><strong>赋值器插入了一条或者多条黑色到白色对象的新引用。</strong></li>
 <li><strong>赋值器删除了全部灰色到白色对象的直接或者间接引用。</strong></li>
 </ol>
-<p><img src="/2020/05/01/jvm1/image-20200501175338302.png" alt></p>
-<p><img src="/2020/05/01/jvm1/image-20200501175228964.png" alt></p>
+<p><img src="/2020/01/31/jvm1/image-20200501175338302.png" alt></p>
+<p><img src="/2020/01/31/jvm1/image-20200501175228964.png" alt></p>
 <p>我们以这个图分析，正在扫描到灰色对象还没结束，但是切断了灰色对象与白色的联系（条件一），同时建立起黑色与白色关系（条件二），那么此时这个白色就不会被扫描到。这就是原本存活的对象错误的被标记了死亡，造成对象消失的情况。</p>
 <p>因此，对于这两个必须同时满足的条件，我们只需要破坏其中一个就可以解决。</p>
 <ol>
@@ -374,10 +376,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
-      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
+    <a href="/2020/01/26/volatile2/" rel="prev" title="Java基础之volatile">
+      <i class="fa fa-chevron-left"></i> Java基础之volatile
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2020/02/01/jvm2/" rel="next" title="深入JVM之辣鸡收集器">
+      深入JVM之辣鸡收集器 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -450,7 +455,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-count">25</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
