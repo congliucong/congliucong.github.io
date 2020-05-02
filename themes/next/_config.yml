@@ -126,6 +126,7 @@ menu:
   # #commonweal: /404/ || fa fa-heartbeat
   首页: / || fas fa-home
   Java基础: /categories/Java基础 || fab fa-java
+  Jvm相关: /categories/Jvm相关 || fab fa-java
   Redis: /categories/Redis || far fa-registered
   消息中间件: /categories/消息中间件 || far fa-meh-blank
   Dubbo: /categories/Dubbo || fas fa-landmark
@@ -630,7 +631,7 @@ valine:
   placeholder: Just go go # Comment box placeholder
   avatar: mm # Gravatar style
   guest_info: nick,mail,link # Custom comment header
-  pageSize: 5 # Pagination size
+  pageSize: 10 # Pagination size
   language: zh-cn
   visitor: false # Article reading statistic
   comment_count: true # If false, comment count will only be displayed in post page, not in home page

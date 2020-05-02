@@ -1,5 +1,5 @@
 ---
-title: Java基础之ThreadLocal
+title: Java基础之ThreadLocal(一)
 date: 2020-04-29 20:28:31
 tags: Java
 categories: Java基础
@@ -590,29 +590,119 @@ ThreadLocal不是用来解决共享对象多线程访问的问题，而是主要
 
 threadLocal会有内存泄漏的问题，虽然threadlocal类的get set remove方法都会去主动清理脏entry，但是我们实际应用中使用的线程池，线程是不会主动结束，所以也会出现内存泄漏问题。
 
-## ThreadLocal实际应用
+## ThreadLocal的线程透传
 
-1. 数据库连接池
+### 什么是线程透传？
+
+从上面ThreadLocal的介绍我们可以知道，ThreadLocal是跟线程绑定的，因此我们在一个线程设置的值，在另外一个线程是获取不到的。如果在一个线程中创建子线程，如果指子线程想要获取主线程的值，是无法获取的。这就是线程透传问题。
+
+### InheritableThreadLocal
+
+InheritableThreadLocal是ThreadLocal的子类，这个类是JDK自带的类，就是用来解决线程透传的问题。
+
+![](threadLocal/image-20200430182426086.png)
+
+我们从一个demo学起：
+
+![](threadLocal/image-20200430183029790.png)
+
+神奇不神奇，通过threadLocal.get()输出的是null，通过inheritableThreadLocal.get()输出的是“InheritableThreadLocal  string”。
+
+我们知道子线程通过threadLocal.get()输出的是自己ThreadLocalMap中的值，因为子线程没有set，所以输出的是初始值null。
+
+但是InheritableThreadLocal是怎么输出主线程输出的值呢？让我们走进源码分析。
+
+### InheritableThreadLocal源码分析
+
+![](threadLocal/image-20200430183515945.png)
+
+因为InheritableThreadLocal继承ThreadLocal，所以InheritableThreadLocal必然也存在内部类ThreadLocalMap，那么它的原理就跟ThreadLocal一样，由线程自己维护ThreadLocalMap。我们看Thread类中，确实有变量***inheritableThreadLocals***。
+
+![](threadLocal/image-20200430183644805.png)
+
+那是如何实现子线程获取父线程设置的值呢？答案是Thread类初始化的时候。
+
+```java
+public Thread() {
+    init(null, null, "Thread-" + nextThreadNum(), 0);
+}
+
+private void init(ThreadGroup g, Runnable target, String name,
+                  long stackSize) {
+    init(g, target, name, stackSize, null, true);
+}
+    
+private void init(ThreadGroup g, Runnable target, String name,
+                  long stackSize, AccessControlContext acc,
+                  boolean inheritThreadLocals) {
+	// 。。。。。。省略
+    if (inheritThreadLocals && parent.inheritableThreadLocals != null)
+        this.inheritableThreadLocals =
+        ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);
+	// 。。。。。。省略
+}
+```
+
+线程Thread初始化时，默认设置***boolean inheritThreadLocal***属性为***true***。当执行init方法时，判断如果父线程的***inheritableThreadLocals***不为空，那么将父线程的***inheritableThreadLocals***设置到自己的**inheritableThreadLocals**中。
+
+我们继续进入***createInheritedMap***看具体是如何复制的？
+
+```java
+        static ThreadLocalMap createInheritedMap(ThreadLocalMap parentMap) {
+            return new ThreadLocalMap(parentMap);
+        }
+
+        private ThreadLocalMap(ThreadLocalMap parentMap) {
+            Entry[] parentTable = parentMap.table;
+            int len = parentTable.length;
+            setThreshold(len);
+            table = new Entry[len];
+
+            for (int j = 0; j < len; j++) {
+                Entry e = parentTable[j];
+                if (e != null) {
+                    @SuppressWarnings("unchecked")
+                    ThreadLocal<Object> key = (ThreadLocal<Object>) e.get();
+                    if (key != null) {
+                        Object value = key.childValue(e.value);
+                        Entry c = new Entry(key, value);
+                        int h = key.threadLocalHashCode & (len - 1);
+                        while (table[h] != null)
+                            h = nextIndex(h, len);
+                        table[h] = c;
+                        size++;
+                    }
+                }
+            }
+        }
+
+```
+
+从代码中，可以知道，子线程是将父线程的parentMap逐一添加到自己的map中。秒啊。
 
 
 
+### TransmittableThreadLocal
 
+> 上面JDK自带的InheritableThreadLocal虽然可以完成父线程到子线程的值传递，但是对于线程池等会池化复用线程的执行组件的情况，线程由线程池创建好，并且线程池化起来反复使用，这时父子线程关系的threadlocal值传递已经没有意义，应用需要的实际上是把**任务提交给线程池时**的ThreadLocal值传递到**任务执行时**。
 
+因此，alibaba开源的**[transmittable-thread-local](https://github.com/alibaba/transmittable-thread-local)**库提供的 [`TransmittableThreadLocal`](https://github.com/alibaba/transmittable-thread-local/blob/master/src/main/java/com/alibaba/ttl/TransmittableThreadLocal.java)就派上了用场。**TransmittableThreadLocal**类继承并加强**InheritableThreadLocal**，能够解决上述问题。
 
+可以看下面的demo:
 
+![](threadLocal/image-20200430191245511.png)
 
+线程池已经将线程创建出来之后，此时往TransmittableThreadLocal里面set值，
 
+1. 通过将使用**TtlRunnable**和**TtlCallable**来修饰传入线程池的**Runnable**和**Callable**。
 
+2. 或者修饰线程池：省去每次**Runnable**和**Callable**传入线程池时的修饰，这个逻辑可以在线程池中完成。
 
+   通过工具类[`com.alibaba.ttl.threadpool.TtlExecutors`](https://github.com/alibaba/transmittable-thread-local/blob/master/src/main/java/com/alibaba/ttl/threadpool/TtlExecutors.java)完成，有下面的方法：
 
-
-
-
-
-
-
-
-
+- `getTtlExecutor`：修饰接口`Executor`
+- `getTtlExecutorService`：修饰接口`ExecutorService`
+- `getTtlScheduledExecutorService`：修饰接口`ScheduledExecutorService`
 
 
 
@@ -620,7 +710,11 @@ threadLocal会有内存泄漏的问题，虽然threadlocal类的get set remove�
 
 > 参考列表
 >
+> 参考列表
+>
 > 1. https://www.jianshu.com/p/dde92ec37bd1
 > 2. http://www.jasongj.com/java/threadlocal/
 > 3. https://www.cnblogs.com/noteless/p/10373044.html
+> 4. https://zhuanlan.zhihu.com/p/113388946
+> 5. https://www.jianshu.com/p/807686414c11
 
