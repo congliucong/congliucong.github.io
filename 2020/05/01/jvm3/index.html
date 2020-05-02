@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。 起飞吧少年~">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入JVM之JVM调优">
+<meta property="og:url" content="http://yoursite.com/2020/05/01/jvm3/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。 起飞吧少年~">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/02B8D45D.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502103800059.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502103828431.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502105245676.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502105629585.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502110345084.png">
+<meta property="article:published_time" content="2020-05-01T14:29:42.000Z">
+<meta property="article:modified_time" content="2020-05-02T03:26:24.490Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Java JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/01/jvm3/02B8D45D.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/01/jvm3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>深入JVM之JVM调优 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/01/jvm3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入JVM之JVM调优
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-01 22:29:42" itemprop="dateCreated datePublished" datetime="2020-05-01T22:29:42+08:00">2020-05-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Jvm%E7%9B%B8%E5%85%B3/" itemprop="url" rel="index"><span itemprop="name">Jvm相关</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/01/jvm3/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/01/jvm3/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。</p>
+<p>起飞吧少年~<img src="/2020/05/01/jvm3/02B8D45D.png" alt></p>
+<a id="more"></a>
+
+<h2 id="内存分配与回收策略"><a href="#内存分配与回收策略" class="headerlink" title="内存分配与回收策略"></a>内存分配与回收策略</h2><ol>
+<li><strong>对象优先在Eden区分配</strong></li>
+</ol>
+<p>对象在新生代Eden区中分配。当Eden区没有足够的空间进行分配时，虚拟机将发起一次Minor GC。</p>
+<ol start="2">
+<li><strong>大对象直接进入老年代</strong></li>
+</ol>
+<p>大量需要内存空间的Java对象，但是Eden区无法存放，因此大于设置的值的对象直接在老年代分配。</p>
+<ol start="3">
+<li><strong>长期存活的对象进入老年代</strong></li>
+</ol>
+<p>对象在Survior区每熬过一次Minor GC，年龄就增加1岁，当它的年龄增加到一定程度后（默认15），就会被晋升到老年代。可以通过 -XX: MaxTenuringThreadhold设置。</p>
+<ol start="4">
+<li><strong>动态对象年龄判定</strong></li>
+</ol>
+<p>HotSpot虚拟机并不是永远要求对象的年龄达到 -XX: MaxTenuringThreshold 才能晋升老年代，如果在survivor空间中相同年龄所有对象大小的总和大于Survior空间的一半，年龄大于或者等于该年龄的对象就会直接进入老年代。</p>
+<ol start="5">
+<li><strong>空间分配担保</strong></li>
+</ol>
+<p>在发生Minor GC之前，会判断老年代最大可用的连续空间是否大于新生代所有对象空间或者大于历次晋升的平均大小，如果大于，则可以把存活的对象移入到老年代，否则，则要触发full gc。</p>
+<h2 id="GC概念"><a href="#GC概念" class="headerlink" title="GC概念"></a>GC概念</h2><h3 id="各种GC含义"><a href="#各种GC含义" class="headerlink" title="各种GC含义"></a>各种GC含义</h3><p><strong>Minor GC/Young GC</strong>:</p>
+<p>针对新生代的垃圾回收称之为Minor GC/ Young GC。</p>
+<p><strong>Major GC/Old GC</strong>:</p>
+<p>针对老年代的垃圾收集。只有CMS会单独收集老年代的行为，其他能收集老年代的GC都会同时收集整个GC堆。</p>
+<p><strong>Full GC:</strong></p>
+<p>收集整个Java堆和方法区的垃圾收集</p>
+<p><strong>Mixed GC:</strong></p>
+<p>收集整个新生代以及部分老年代的垃圾收集。只有G1收集器会有这种行为。</p>
+<h3 id="什么时候触发GC"><a href="#什么时候触发GC" class="headerlink" title="什么时候触发GC?"></a>什么时候触发GC?</h3><p><strong>Young GC:</strong> 当新生代的Eden区分配满的时候会触发Young GC。</p>
+<p><strong>Full GC:</strong> </p>
+<ol>
+<li>当触发Young GC时，发现<strong>历次晋升到老年代对象的平均大小</strong>大于<strong>老年代最大可用连续空间</strong>或者<strong>新生代对象大小</strong>大于<strong>老年代最大可用连续空间</strong>，则不会触发Young GC转而触发Full GC。</li>
+<li>Perm Gen空间不足以分配 ，也会触发full gc。</li>
+<li>System.gc()默认也是触发 full gc。</li>
+</ol>
+<p><strong>Mixed GC</strong>:一旦老年代占据堆内存45%，触发Mixed GC。</p>
+<h2 id="常见工具"><a href="#常见工具" class="headerlink" title="常见工具"></a>常见工具</h2><h3 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h3><p>如果要查看JVM的整体运行情况 ，可以用jstat。可以轻易的看出当前运行中的系统JVM的Eden/Survivor/老年代的内存使用情况，还有Young GC和Full GC的执行次数以及耗时。</p>
+<p><img src="/2020/05/01/jvm3/image-20200502103800059.png" alt></p>
+<p><strong>jstat -gc PID</strong></p>
+<ol>
+<li>S0C : From Survivor区的大小</li>
+<li>S0C : To Survivor区的大小</li>
+<li>S0U :  From Survivor区的使用内存大小</li>
+<li>S1U : To Survivor区的使用内存代销</li>
+<li>EC : Eden 区的大小</li>
+<li>EU : Eden 区当前使用内存的大小</li>
+<li>OC : 老年代的大小</li>
+<li>OU : 老年代当前使用内存的大小</li>
+<li>MC : 方法区的大小</li>
+<li>MU : 方法区当前使用内存大小</li>
+<li>YGC : 系统运行迄今为止Young GC次数</li>
+<li>YGCT : 系统运行迄今为止Young GC耗时</li>
+<li>FGC : 系统运行迄今为止Full GC次数</li>
+<li>FGCT : 系统运行迄今为止Full GC耗时</li>
+<li>GCT : 所有GC的总耗时</li>
+</ol>
+<h4 id="应该如何使用jstat工具？"><a href="#应该如何使用jstat工具？" class="headerlink" title="应该如何使用jstat工具？"></a><strong>应该如何使用jstat工具？</strong></h4><p>只要合理分配内存空间，尽可能的让对象留在年轻代不进入老年代，避免频繁发生full gc，就是JVM最好的性能优化。</p>
+<ol>
+<li>首先要知道 <strong>新生代对象增长的速率</strong>，即随着系统运行，每秒钟会在年轻代的Eden区分配多少对象。</li>
+</ol>
+<p>只需要运行 <strong>jstat -gc PID 1000 10</strong>，意思是每个 一秒钟更新出来一行jstat统计信息，一共执行10次统计。通过这个命令，就可以灵活的对线上机器通过固定频率输出统计信息，观察Eden区对象占用变化。如果系统负载不高，那么可以将时间设置为1分钟、10分钟等，同时在高峰时间段和非高峰时间段查看对象增长速率，这样首先对系统有个清晰的认识。</p>
+<ol start="2">
+<li><strong>Young GC的触发频率和每次耗时</strong></li>
+</ol>
+<p>在上一步的对象增长速率能够大概清楚了，那么Young gc就也可以推断出来，比如Eden区1G，每秒新增5MB，那么大概会三四分钟触发一次Young gc。经过多次Young gc后，总耗时/总次数即可大概算出每次耗时，大概就能知道每次Young GC的时候会导致系统停顿多长时间。</p>
+<ol start="3">
+<li><strong>每次Young GC后有多少对象是存活和进入老年代</strong></li>
+</ol>
+<p>既然推断出大概3分钟一次Young GC，那么可以执行 jstat -gc PID 180000 10，相当于每隔3分钟执行一次统计，连续执行10次，可以观察每3分钟后Eden  Survivor 老年代的对象变化。比如每次Young GC后老年代新增50MB，那么老年代的增长速率也就可以知道了。</p>
+<ol start="4">
+<li><strong>Full GC的触发时机和耗时</strong></li>
+</ol>
+<p>知道了老年代对象的增长速率，那么Full GC的触发时机也就可以知道了。</p>
+<p>因此，通过jstat可以知道系统JVM的运行情况，就可以针对性的进行优化。</p>
+<h3 id="jmap-jhat"><a href="#jmap-jhat" class="headerlink" title="jmap/jhat"></a>jmap/jhat</h3><p>通过jstat知道了系统的jvm情况，就可以通过jmap 和jhat 观察系统JVM中对象分布，了解大系统平时运行过程中，到底哪些对象占据了主角位置，占据了多少内存空间，对系统可以有更加细致的了解。</p>
+<h4 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h4><p>当发现JVM新增对象的速度很快时，就可以用jmap去了解系统的对象分布。</p>
+<p><strong>1. jmap -heap PID</strong>可以了解系统运行时的内存区域，不过还是jstat信息全点，一般不用这个。</p>
+<p><img src="/2020/05/01/jvm3/image-20200502103828431.png" alt></p>
+<p><strong>2. jmap -histo PID 了解系统运行时的对象</strong></p>
+<p><img src="/2020/05/01/jvm3/image-20200502105245676.png" alt></p>
+<p><strong>3. jmap -dump:live,format=b,file=dump.hprof PID，使用jmap生成堆内存转储快照</strong></p>
+<p>该命令会在当前目录下生成一个dump.hrpof文件，这个文件是二进制格式，不能直接看。因此我们可以用jhat。</p>
+<p><img src="/2020/05/01/jvm3/image-20200502105629585.png" alt></p>
+<h4 id="jhat"><a href="#jhat" class="headerlink" title="jhat"></a>jhat</h4><p>我们可以用jhat在浏览器中分析堆转出快照，jhat内置了web服务器，可以通过浏览器来图形化分析堆转储快照。</p>
+<p><strong>jhat  -port 7000 dump.hprof</strong></p>
+<p><img src="/2020/05/01/jvm3/image-20200502110345084.png" alt></p>
+<h2 id="JVM合理设置步骤"><a href="#JVM合理设置步骤" class="headerlink" title="JVM合理设置步骤"></a>JVM合理设置步骤</h2><ol>
+<li><strong>系统开发好后的预估性优化</strong></li>
+</ol>
+<p>系统开发完毕，先对系统进行预估性的优化，即估算系统每秒大概多少请求，每个请求会创建多少对象啊，占用多少内存，机器应该选用什么样的配置、年轻代应该给多少内存、Young GC触发的频率、对象进入老年代的速度、老年代应该给多少内存、Full GC触发的频率等。</p>
+<p>优化的思路是：尽量让每次Young GC后存活的对象小于Survivor区域的50%，都留存在年轻代。尽量别让对象进入老年代。尽量减少Full GC的频率，避免频繁Full GC对JVM性能的影响。</p>
+<ol start="2">
+<li><strong>系统压测时的JVM优化</strong></li>
+</ol>
+<p>预估性优化之后，还要经过一连串的测试，在一定压力下性能、稳定性、和并发能力都正常，会可以部署到生产环境中。</p>
+<p>这里有个非常关键的环节就是预发布环境的压力测试。 比如使用压力测试工具模拟1000个用户同时访问系统，造成每秒500个请求的压力，看系统能否支撑每秒500请求的压力，同时看系统各个接口的相应延时能够在200ms之内，也就是接口的性能不能太慢，或者在数据库中模拟出来百万级单表数据，看系统是否能稳定运行。</p>
+<p>所以就可以在压测的环节，对测试机器运行的系统，采用jstat工具来分析模拟真实环境下的压力。</p>
+<p>根据压测环境中的jvm运行情况，如果发现对象过快进入老年代，那么可能是年轻代太小导致频繁的Young GC，然后Young GC的时候很多对象还是存活的，结果Survivor也太小，导致很多对象频繁进入老年代。</p>
+<p>总之就是合理调整新生代、老年代、Eden、Survivor各个区域的内存大小，保证对象尽量留在新生代，不要过快进入老年代。</p>
+<ol start="3">
+<li><p><strong>对线上系统进行JVM监控</strong></p>
+</li>
+<li><p>第一种方式比较LOW，就是每天在高峰期、低峰期都用jstat/jmap/jhat工具查看线上系统JVM运行情况，有没有频繁full gc的问题。</p>
+</li>
+<li><p>部署专门的监控系统，Zabbix/OpenFalcon/Ganglia等。</p>
+</li>
+</ol>
+<h2 id="JVM优化实际案例"><a href="#JVM优化实际案例" class="headerlink" title="JVM优化实际案例"></a>JVM优化实际案例</h2>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java-JVM/" rel="tag"># Java JVM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
+      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#内存分配与回收策略"><span class="nav-number">1.</span> <span class="nav-text">内存分配与回收策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GC概念"><span class="nav-number">2.</span> <span class="nav-text">GC概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#各种GC含义"><span class="nav-number">2.1.</span> <span class="nav-text">各种GC含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么时候触发GC"><span class="nav-number">2.2.</span> <span class="nav-text">什么时候触发GC?</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#常见工具"><span class="nav-number">3.</span> <span class="nav-text">常见工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#jstat"><span class="nav-number">3.1.</span> <span class="nav-text">jstat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#应该如何使用jstat工具？"><span class="nav-number">3.1.1.</span> <span class="nav-text">应该如何使用jstat工具？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jmap-jhat"><span class="nav-number">3.2.</span> <span class="nav-text">jmap&#x2F;jhat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#jmap"><span class="nav-number">3.2.1.</span> <span class="nav-text">jmap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#jhat"><span class="nav-number">3.2.2.</span> <span class="nav-text">jhat</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JVM合理设置步骤"><span class="nav-number">4.</span> <span class="nav-text">JVM合理设置步骤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JVM优化实际案例"><span class="nav-number">5.</span> <span class="nav-text">JVM优化实际案例</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">26</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">181k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:44</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
