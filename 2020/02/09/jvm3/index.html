@@ -24,25 +24,25 @@
   <meta name="description" content="上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。 起飞吧少年~">
 <meta property="og:type" content="article">
 <meta property="og:title" content="深入JVM之JVM调优">
-<meta property="og:url" content="http://yoursite.com/2020/05/01/jvm3/index.html">
+<meta property="og:url" content="http://yoursite.com/2020/02/09/jvm3/index.html">
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。 起飞吧少年~">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/02B8D45D.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502103800059.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502103828431.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502105245676.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502105629585.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502110345084.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502232408957.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/01/jvm3/image-20200502234019487.png">
-<meta property="article:published_time" content="2020-05-01T14:29:42.000Z">
-<meta property="article:modified_time" content="2020-05-03T06:44:07.478Z">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/02B8D45D.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502103800059.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502103828431.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502105245676.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502105629585.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502110345084.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502232408957.png">
+<meta property="og:image" content="http://yoursite.com/2020/02/09/jvm3/image-20200502234019487.png">
+<meta property="article:published_time" content="2020-02-09T14:29:42.000Z">
+<meta property="article:modified_time" content="2020-05-03T16:30:23.074Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/05/01/jvm3/02B8D45D.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/02/09/jvm3/02B8D45D.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/05/01/jvm3/">
+<link rel="canonical" href="http://yoursite.com/2020/02/09/jvm3/">
 
 
 <script id="page-configurations">
@@ -215,7 +215,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/01/jvm3/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/02/09/jvm3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -238,7 +238,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-05-01 22:29:42" itemprop="dateCreated datePublished" datetime="2020-05-01T22:29:42+08:00">2020-05-01</time>
+              <time title="创建时间：2020-02-09 22:29:42" itemprop="dateCreated datePublished" datetime="2020-02-09T22:29:42+08:00">2020-02-09</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -259,8 +259,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/05/01/jvm3/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/01/jvm3/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/02/09/jvm3/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/02/09/jvm3/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -290,7 +290,7 @@
 
       
         <p>上篇我们分析了常见的垃圾回收器，我们这篇聚焦于内存分配与系统问题定位实践。这部分知识才是体现一个Java工程师的实力，毕竟纯理论知识要落地才有价值。</p>
-<p>起飞吧少年~<img src="/2020/05/01/jvm3/02B8D45D.png" alt></p>
+<p>起飞吧少年~<img src="/2020/02/09/jvm3/02B8D45D.png" alt></p>
 <a id="more"></a>
 
 <h2 id="内存分配与回收策略"><a href="#内存分配与回收策略" class="headerlink" title="内存分配与回收策略"></a>内存分配与回收策略</h2><p>我们先来了解一下内存是如何分配，了解JVM实际运行运行机制，才能分析出JVM出现问题是哪里的原因。</p>
@@ -332,7 +332,7 @@
 </ol>
 <p><strong>Mixed GC</strong>:一旦老年代占据堆内存45%，触发Mixed GC。</p>
 <h2 id="常见工具"><a href="#常见工具" class="headerlink" title="常见工具"></a>常见工具</h2><h3 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h3><p>如果要查看JVM的整体运行情况 ，可以用jstat。可以轻易的看出当前运行中的系统JVM的Eden/Survivor/老年代的内存使用情况，还有Young GC和Full GC的执行次数以及耗时。</p>
-<p><img src="/2020/05/01/jvm3/image-20200502103800059.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502103800059.png" alt></p>
 <p><strong>jstat -gc PID</strong></p>
 <ol>
 <li>S0C : From Survivor区的大小</li>
@@ -372,15 +372,15 @@
 <h3 id="jmap-jhat"><a href="#jmap-jhat" class="headerlink" title="jmap/jhat"></a>jmap/jhat</h3><p>通过jstat知道了系统的jvm情况，就可以通过jmap 和jhat 观察系统JVM中对象分布，了解大系统平时运行过程中，到底哪些对象占据了主角位置，占据了多少内存空间，对系统可以有更加细致的了解。</p>
 <h4 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h4><p>当发现JVM新增对象的速度很快时，就可以用jmap去了解系统的对象分布。</p>
 <p><strong>1. jmap -heap PID</strong>可以了解系统运行时的内存区域，不过还是jstat信息全点，一般不用这个。</p>
-<p><img src="/2020/05/01/jvm3/image-20200502103828431.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502103828431.png" alt></p>
 <p><strong>2. jmap -histo PID 了解系统运行时的对象</strong></p>
-<p><img src="/2020/05/01/jvm3/image-20200502105245676.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502105245676.png" alt></p>
 <p><strong>3. jmap -dump:live,format=b,file=dump.hprof PID，使用jmap生成堆内存转储快照</strong></p>
 <p>该命令会在当前目录下生成一个dump.hrpof文件，这个文件是二进制格式，不能直接看。因此我们可以用jhat。</p>
-<p><img src="/2020/05/01/jvm3/image-20200502105629585.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502105629585.png" alt></p>
 <h4 id="jhat"><a href="#jhat" class="headerlink" title="jhat"></a>jhat</h4><p>我们可以用jhat在浏览器中分析堆转出快照，jhat内置了web服务器，可以通过浏览器来图形化分析堆转储快照。</p>
 <p><strong>jhat  -port 7000 dump.hprof</strong></p>
-<p><img src="/2020/05/01/jvm3/image-20200502110345084.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502110345084.png" alt></p>
 <h2 id="JVM合理设置步骤"><a href="#JVM合理设置步骤" class="headerlink" title="JVM合理设置步骤"></a>JVM合理设置步骤</h2><ol>
 <li><strong>系统开发好后的预估性优化</strong></li>
 </ol>
@@ -411,7 +411,7 @@
 <p>参数：-XX : CMSParallelInitialMarkEnabled，这个参数会在CMS垃圾回收器的“初始标记”阶段开启多线程并发执行。</p>
 <p>参数：-XX :CMSScavengeBeforeRemark，这个参数会是CMS的重新标记阶段之前，尽量执行一次Young GC。CMS重新标记也是需要STW的，所以如果在重新标记之前，先执行一次Young GC，就会回收一些年轻代里没有人引用的对象，这样使CMS得重新标记阶段就可以少扫描一些对象，提高CMS的重新标记阶段的性能。</p>
 <h3 id="大对象导致的频繁Full-GC"><a href="#大对象导致的频繁Full-GC" class="headerlink" title="大对象导致的频繁Full GC"></a>大对象导致的频繁Full GC</h3><p>4G机器，堆内存设置1.5G，新生代512G，老年代1G。</p>
-<p><img src="/2020/05/01/jvm3/image-20200502232408957.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502232408957.png" alt></p>
 <p>系统固定频率发生卡顿，通过在高峰期jstat观察JVM实际运行情况，发现每次Young GC过后进入老年代的对象很少，并不是每次YGC都有几十MB对象进入老年代，而是偶尔一次，正常来说不至于30分钟就会导致老年代占用空间达到68%。通过继续观察，发现系统运行的时候，突然会有几百MB的对象占据在老年代，所以YGC偶尔一次几十MB对象升入老年代，平均30分钟触发一次FGC。所以可以锁定是<strong>大对象导致的频繁FGC</strong>。</p>
 <p>所以接下来要做的就是定位大对象，通过后台jstat工具观察，在老年代突然进入几百MB大对象时，立马用jmap工具导出一份dump内存快照，然后MAT工具定位出大对象是几个Map之类的数据结构，大概可以分析出来这是从数据库中查出来的数据，通过排查代码，发现SQL在某种特殊时候，会执行 select * form XXX，但是没有where 条件，因此可以得出结论，是这个代码层面的bug导致把表里的数据全部查询出来，所以会每隔一段时间搞出几百MB的大对象，直接进入老年代，伴随着YGC的对象，所以导致FGC。</p>
 <p>所以这个案例的优化可以两个角度解决:</p>
@@ -419,7 +419,7 @@
 <li>解决代码层面的bug，如果没有条件，直接返回null。</li>
 <li>年轻代明显过小，Survivor区域空间不够，每次YGC存活几十MB，如果Survivor只有70MB很容易触发动态年龄判定，让对象进入老年代。JVM参数调整为：年轻代调整为700MB，Survivor为150MB，这样每次YGC的存活对象一般不会进入老年代。同时将永久代大小设置为256MB，因为不设置默认几十兆，如果运用反射之类的机制，动态加载的类过多，会频繁触发FUll GC。</li>
 </ol>
-<p><img src="/2020/05/01/jvm3/image-20200502234019487.png" alt></p>
+<p><img src="/2020/02/09/jvm3/image-20200502234019487.png" alt></p>
 <h3 id="System-gc-导致频繁GC"><a href="#System-gc-导致频繁GC" class="headerlink" title="System.gc()导致频繁GC"></a>System.gc()导致频繁GC</h3><p>新系统上线，在一次业务高峰期，系统直接卡死不动，通过jstat查看运行情况，JVM几乎每秒都会执行一次Full GC，每次耗时几百毫秒。而且通过jstat查看JVM各个内存区域的使用量，基本没什么问题，年轻代对象增长速度并不块，老年代、永久代使用的空间占比也不高。所以定位出可能有人显式调用了<strong>System.gc()</strong>。</p>
 <p>通过IDEA里面全局搜索，发现还真有这样写的，经询问同学，同学的思路是：在代码里面一下子会加载出一大批数据，一旦请求处理完毕，觉得这大批数据废弃不用，占据内存过多，完全可以主动调用System.gc来触发一次GC，将它们回收。</p>
 <p>因此，针对这个问题，可以在JVM参数里面添加 -XX : +DisableExplicitGC，这个参数的意思是禁止显示执行GC。</p>
@@ -543,11 +543,11 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
-      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
+    <a href="/2020/02/01/jvm2/" rel="prev" title="深入JVM之辣鸡收集器">
+      <i class="fa fa-chevron-left"></i> 深入JVM之辣鸡收集器
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/05/03/jvm4/" rel="next" title="深入JVM之Java内存区域">
+    <a href="/2020/02/16/jvm4/" rel="next" title="深入JVM之Java内存区域">
       深入JVM之Java内存区域 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
