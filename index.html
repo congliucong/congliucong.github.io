@@ -202,6 +202,109 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/04/spring-IOC2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/04/spring-IOC2/" class="post-title-link" itemprop="url">Spring之IOC(二)加载bean</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-04 21:52:23" itemprop="dateCreated datePublished" datetime="2020-05-04T21:52:23+08:00">2020-05-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/04/spring-IOC2/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/04/spring-IOC2/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>24 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>上篇文章介绍了从xml到一个真正可以用的Bean的第一个阶段—容器初始化，这篇文章我们就继续第二个阶段—-加载bean。我们上篇文章提过，只有当显示或者隐式的调用getBean()时，则会触发加载bean阶段。</p>
+<p>加油ヾ(◍°∇°◍)ﾉﾞ</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/05/04/spring-IOC2/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/04/spring-IOC/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -216,7 +319,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/05/04/spring-IOC/" class="post-title-link" itemprop="url">Spring之IOC</a>
+            <a href="/2020/05/04/spring-IOC/" class="post-title-link" itemprop="url">Spring之IOC(一)容器初始化</a>
         </h2>
 
         <div class="post-meta">
@@ -279,89 +382,14 @@
       
           <p>IOC是Spring最为核心的概念，我们开始逐步对IOC进行拆解。争取能将IOC原理以及工作流程理解的更加透彻。</p>
 <p>加油ヾ(◍°∇°◍)ﾉﾞ</p>
-<h2 id="什么是IOC"><a href="#什么是IOC" class="headerlink" title="什么是IOC"></a>什么是IOC</h2><p><strong>IOC全称Inversion of Control，意思为控制反转，IOC作用就是由Spring IOC容器来负责对象的生命周期以及对象之间的关系</strong>。</p>
-<p>通俗的讲，就是在传统开发模式中，我们需要对象，就直接以new一个对象的方式来创建对象。有了IOC容器之后，对象的控制的交给IOC容器来进行管理，并且我们使用对象也不再是自己管理，而且所依赖的对象直接有IOC容器创建后注入到我们手里，依赖的对象获取由原来的主动变为了被动。这也就是IOC为什么又称控制反转的意思。</p>
-<p>IOC可以通过 构造器注入、setter方法注入以及接口注入三种方式。</p>
-<h2 id="IOC源码解析"><a href="#IOC源码解析" class="headerlink" title="IOC源码解析"></a>IOC源码解析</h2><h3 id="IOC实例"><a href="#IOC实例" class="headerlink" title="IOC实例"></a>IOC实例</h3><p><img src="/2020/05/04/spring-IOC/image-20200504175723499.png" alt></p>
-<p>我们仍以前面介绍循环依赖的例子开始，第一种方式获取bean我们最后再讲，我们首先从第二种方式开始。</p>
-<p>从xml到一个可以使用的Bean对象，这整个过程，我们可以分为两个阶段：</p>
-<ol>
-<li><strong>容器初始化</strong></li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ClassPathResource resource = <span class="keyword">new</span> ClassPathResource(<span class="string">"springtest/cycle.xml"</span>);</span><br><span class="line">DefaultListableBeanFactory factory = <span class="keyword">new</span> DefaultListableBeanFactory();</span><br><span class="line">XmlBeanDefinitionReader reader = <span class="keyword">new</span> XmlBeanDefinitionReader(factory);</span><br><span class="line">reader.loadBeanDefinitions(resource);</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li><strong>加载bean</strong></li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CycleA cycleA = (CycleA) factory.getBean(<span class="string">"cycleA"</span>);</span><br></pre></td></tr></table></figure>
-
-<p>我们分开对这两个阶段展开描述。</p>
-<h3 id="容器初始化"><a href="#容器初始化" class="headerlink" title="容器初始化"></a>容器初始化</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//根据xml配置文件创建Resource资源对象。</span></span><br><span class="line">ClassPathResource resource = <span class="keyword">new</span> ClassPathResource(<span class="string">"springtest/cycle.xml"</span>);</span><br><span class="line"><span class="comment">//创建一个BeanFactory.</span></span><br><span class="line">DefaultListableBeanFactory factory = <span class="keyword">new</span> DefaultListableBeanFactory();</span><br><span class="line"><span class="comment">//创建BeanDefinitionReader,用于载入BeanDefinition</span></span><br><span class="line">XmlBeanDefinitionReader reader = <span class="keyword">new</span> XmlBeanDefinitionReader(factory);</span><br><span class="line"><span class="comment">//开启Bean的载入和注册过程，完成后的bean放置在IOC容器里面。</span></span><br><span class="line">reader.loadBeanDefinitions(resource);</span><br></pre></td></tr></table></figure>
-
-<p>加载Bean主要分为三个步骤：</p>
-<ol>
-<li>资源定位</li>
-</ol>
-<p><strong>org.springframework.core.io.Resource</strong>类作为Spring框架所有资源的抽象和访问接口，由子类AbstractResource提供统一的默认实现。类图如下：</p>
-<p><img src="/2020/05/04/spring-IOC/spring-201805091003.jpg" alt></p>
-<p>可以看出我们上面的例子是使用ClassPathResource ： class path类型资源的实现</p>
-<ol start="2">
-<li>资源装载</li>
-</ol>
-<p>资源装载就是BeanDefinition的载入。BeanDefinitionReader读取、解析Resource资源，也就是将用户定义的Bean表示为IOC容器的内部数据结构：BeanDefinition。在IOC内部维护这一个BeanDidinitionMap的数据结构，在配置文件中每一个<bean> 都对应着一个BeanDedinition对象。</bean></p>
-<ol start="3">
-<li>注册</li>
-</ol>
-<p>向IOC容器注册在第二步解析好的BeanDefinition，这个过程是通过BeanDefinitionRegister接口来实现的。注册其实就是将BeanDedifinition注入到BeanDidinitionMap这个ConcurrentMap里面，IOC容器就是通过这个HashMap来维护这些BeanDefinition的。</p>
-<p>需要注意的是，以上过程并没有完成依赖注入，依赖注入真正是发生在第一个getBean()的时候。我们接下来对每一个步骤进行详细的讲解。</p>
-<h4 id="Resource定位"><a href="#Resource定位" class="headerlink" title="Resource定位"></a>Resource定位</h4><p>Spring为了解决资源定位的问题，提供了Resource、ResourceLoader接口。Resource是资源的抽象接口，ResourceLoader则是资源加载的抽象接口，各自都有不同的子类根据不同功能实现。</p>
-<p>上面代码中，第一部就完成了资源的定义，<strong>ClassPathResource resource = new ClassPathResource(“springtest/cycle.xml”);</strong>。那么ResourceLoader是如何进行定义的呢？</p>
-<p>在XmlBeanDefinitionRead的构造方法里面，直接调用父类AbstractBeanDefinitionReader 的构造方法。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">XmlBeanDefinitionReader</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">super</span>(registry);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="title">AbstractBeanDefinitionReader</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	Assert.notNull(registry, <span class="string">"BeanDefinitionRegistry must not be null"</span>);</span><br><span class="line">	<span class="keyword">this</span>.registry = registry;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Determine ResourceLoader to use.</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registry <span class="keyword">instanceof</span> ResourceLoader) &#123;</span><br><span class="line">		<span class="keyword">this</span>.resourceLoader = (ResourceLoader) <span class="keyword">this</span>.registry;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">this</span>.resourceLoader = <span class="keyword">new</span> PathMatchingResourcePatternResolver();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Inherit Environment if possible</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registry <span class="keyword">instanceof</span> EnvironmentCapable) &#123;</span><br><span class="line">		<span class="keyword">this</span>.environment = ((EnvironmentCapable) <span class="keyword">this</span>.registry).getEnvironment();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">this</span>.environment = <span class="keyword">new</span> StandardEnvironment();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="BeanDefinition的载入和解析"><a href="#BeanDefinition的载入和解析" class="headerlink" title="BeanDefinition的载入和解析"></a>BeanDefinition的载入和解析</h4><p> <strong>reader.loadBeanDefinitions(resource);</strong>开启BeanDefiniiton的解析过程，该方法将Resource包装为EncodedResource实例对象，这样可以对Resource进行编码，保证内容读取的正确性，最后调用<strong>loadBeanDefinitions()</strong>方法。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">loadBeanDefinitions</span><span class="params">(Resource resource)</span> <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line">   <span class="keyword">return</span> loadBeanDefinitions(<span class="keyword">new</span> EncodedResource(resource));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">loadBeanDefinitions</span><span class="params">(EncodedResource encodedResource)</span> <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line">	<span class="comment">//省略一些验证</span></span><br><span class="line">   <span class="keyword">try</span> &#123;</span><br><span class="line">       <span class="comment">//将资源文件转为InputStream的IO流</span></span><br><span class="line">      InputStream inputStream = encodedResource.getResource().getInputStream();</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="comment">//从InputStream得到xml的解析</span></span><br><span class="line">         InputSource inputSource = <span class="keyword">new</span> InputSource(inputStream);</span><br><span class="line">         <span class="keyword">if</span> (encodedResource.getEncoding() != <span class="keyword">null</span>) &#123;</span><br><span class="line">            inputSource.setEncoding(encodedResource.getEncoding());</span><br><span class="line">         &#125;</span><br><span class="line">          <span class="comment">//具体过程</span></span><br><span class="line">         <span class="keyword">return</span> doLoadBeanDefinitions(inputSource, encodedResource.getResource());</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">finally</span> &#123;</span><br><span class="line">         inputStream.close();</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">	<span class="comment">//。。。。省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>调用<strong><em>doLoadBeanDefinitions()</em></strong>方法执行具体的解析动作：这里首先将xml的inputSource获取为对应的Document对象，然后调用<strong><em>registerBeanDefinitions()</em></strong>方法进行BeanDefinition的解析注册过程。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">int</span> <span class="title">doLoadBeanDefinitions</span><span class="params">(InputSource inputSource, Resource resource)</span></span></span><br><span class="line"><span class="function">      <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line">   <span class="keyword">try</span> &#123;</span><br><span class="line">      Document doc = doLoadDocument(inputSource, resource);</span><br><span class="line">      <span class="keyword">return</span> registerBeanDefinitions(doc, resource);</span><br><span class="line">   &#125;</span><br><span class="line">	<span class="comment">//省略</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>首先创建<strong>BeanDefinitionDocumentReader</strong>，然后调用<strong><em>documentReader.registerBeanDefinitions</em></strong>开启解析。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">registerBeanDefinitions</span><span class="params">(Document doc, Resource resource)</span> <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line">   BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();</span><br><span class="line">   <span class="keyword">int</span> countBefore = getRegistry().getBeanDefinitionCount();</span><br><span class="line">   documentReader.registerBeanDefinitions(doc, createReaderContext(resource));</span><br><span class="line">   <span class="keyword">return</span> getRegistry().getBeanDefinitionCount() - countBefore;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们依然只看主要代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">registerBeanDefinitions</span><span class="params">(Document doc, XmlReaderContext readerContext)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">this</span>.readerContext = readerContext;</span><br><span class="line">   logger.debug(<span class="string">"Loading bean definitions"</span>);</span><br><span class="line">   Element root = doc.getDocumentElement();</span><br><span class="line">   doRegisterBeanDefinitions(root);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doRegisterBeanDefinitions</span><span class="params">(Element root)</span> </span>&#123;</span><br><span class="line">		BeanDefinitionParserDelegate parent = <span class="keyword">this</span>.delegate;</span><br><span class="line">		<span class="keyword">this</span>.delegate = createDelegate(getReaderContext(), root, parent);</span><br><span class="line"></span><br><span class="line">		<span class="comment">//省略</span></span><br><span class="line">		<span class="comment">//前置处理</span></span><br><span class="line">		preProcessXml(root);</span><br><span class="line">        <span class="comment">//解析</span></span><br><span class="line">		parseBeanDefinitions(root, <span class="keyword">this</span>.delegate);</span><br><span class="line">        <span class="comment">//后置处理</span></span><br><span class="line">		postProcessXml(root);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">this</span>.delegate = parent;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">parseBeanDefinitions</span><span class="params">(Element root, BeanDefinitionParserDelegate delegate)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Bean定义的Document对象使用了Spring默认的XML命名空间</span></span><br><span class="line">   <span class="keyword">if</span> (delegate.isDefaultNamespace(root)) &#123;</span><br><span class="line">      NodeList nl = root.getChildNodes();</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nl.getLength(); i++) &#123;</span><br><span class="line">         Node node = nl.item(i);</span><br><span class="line">         <span class="comment">//判断Document节点是xml元素节点</span></span><br><span class="line">         <span class="keyword">if</span> (node <span class="keyword">instanceof</span> Element) &#123;</span><br><span class="line">            Element ele = (Element) node;</span><br><span class="line">             <span class="comment">//如果bean定义的Document的元素节点使用的是Spring默认的xml命名空间</span></span><br><span class="line">            <span class="keyword">if</span> (delegate.isDefaultNamespace(ele)) &#123;</span><br><span class="line">                <span class="comment">//那么使用Spring的bean规则解析元素节点</span></span><br><span class="line">               parseDefaultElement(ele, delegate);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//否则使用自定义的解析规则解析元素节点</span></span><br><span class="line">               delegate.parseCustomElement(ele);</span><br><span class="line">            &#125;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">else</span> &#123;</span><br><span class="line">       <span class="comment">//否则使用自定义的解析规则解析元素节点</span></span><br><span class="line">      delegate.parseCustomElement(root);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里迭代root元素的所有子节点，如果子节点为默认命名空间，则调用<strong><em>parseDefaultElement()</em></strong>，否则调用<strong><em>parseCustomElement()</em></strong>开启自定义标签的解析注册过程。</p>
-<p>我们一般都是默认的命名空间，因此以parseDefaultElement()来继续跟进。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseDefaultElement</span><span class="params">(Element ele, BeanDefinitionParserDelegate delegate)</span> </span>&#123;</span><br><span class="line">   <span class="comment">//如果元素节点是&lt;Import&gt;导入元素</span></span><br><span class="line">    <span class="keyword">if</span> (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) &#123;</span><br><span class="line">      importBeanDefinitionResource(ele);</span><br><span class="line">   &#125;</span><br><span class="line">    <span class="comment">//如果元素是&lt;Alias&gt;别名元素</span></span><br><span class="line">   <span class="keyword">else</span> <span class="keyword">if</span> (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) &#123;</span><br><span class="line">      processAliasRegistration(ele);</span><br><span class="line">   &#125;</span><br><span class="line">    <span class="comment">//如果元素节点&lt;bean&gt; </span></span><br><span class="line">   <span class="keyword">else</span> <span class="keyword">if</span> (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) &#123;</span><br><span class="line">      processBeanDefinition(ele, delegate);</span><br><span class="line">   &#125;</span><br><span class="line">    <span class="comment">//如果元素节点&lt;beans&gt;</span></span><br><span class="line">   <span class="keyword">else</span> <span class="keyword">if</span> (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) &#123;</span><br><span class="line">      <span class="comment">// recurse 递归解析</span></span><br><span class="line">      doRegisterBeanDefinitions(ele);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们以bean为例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processBeanDefinition</span><span class="params">(Element ele, BeanDefinitionParserDelegate delegate)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//对元素进行解析，解析成功，则返回BeanDefinitionHolder，它内部属性为name和BeanDefinition。</span></span><br><span class="line">   BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);</span><br><span class="line">   <span class="keyword">if</span> (bdHolder != <span class="keyword">null</span>) &#123;</span><br><span class="line">       <span class="comment">//进行自定义标签处理</span></span><br><span class="line">      bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="comment">// Register the final decorated instance.</span></span><br><span class="line">         BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> (BeanDefinitionStoreException ex) &#123;</span><br><span class="line">         getReaderContext().error(<span class="string">"Failed to register bean definition with name '"</span> +</span><br><span class="line">               bdHolder.getBeanName() + <span class="string">"'"</span>, ele, ex);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// Send registration event.</span></span><br><span class="line">      getReaderContext().fireComponentRegistered(<span class="keyword">new</span> BeanComponentDefinition(bdHolder));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong><em>delegate.parseBeanDefinitionElement</em></strong>方法对Bean进行解析，根据id name  alias，然后调用<strong>parseBeanDefinitionElement()</strong>对属性进行解析并封装为<strong>GenericBeanDefinition **，最后构造成</strong>BeanDefinitionHolder**实例对象并返回，我们就不在往里面进入了。</p>
-<h4 id="BeanDefinition的注册"><a href="#BeanDefinition的注册" class="headerlink" title="BeanDefinition的注册"></a>BeanDefinition的注册</h4><p>上面方法解析完毕后，调用<strong><em>BeanDefinitionReaderUtils.registerBeanDefinition()</em></strong>对<strong>BeanDefinitionHolder</strong>进行注册。</p>
-<p>注册的核心是将BeanDefinition放入到IOC容器维护的<strong>beanDefinitionMap</strong>里面。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">registerBeanDefinition</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)</span></span></span><br><span class="line"><span class="function">      <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Register bean definition under primary name.</span></span><br><span class="line">   String beanName = definitionHolder.getBeanName();</span><br><span class="line">   registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Register aliases for bean name, if any.</span></span><br><span class="line">   String[] aliases = definitionHolder.getAliases();</span><br><span class="line">   <span class="keyword">if</span> (aliases != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (String alias : aliases) &#123;</span><br><span class="line">         registry.registerAlias(beanName, alias);</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">registerBeanDefinition</span><span class="params">(String beanName, BeanDefinition beanDefinition)</span></span></span><br><span class="line"><span class="function">			<span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">		BeanDefinition oldBeanDefinition;</span><br><span class="line"></span><br><span class="line">		oldBeanDefinition = <span class="keyword">this</span>.beanDefinitionMap.get(beanName);</span><br><span class="line">		<span class="keyword">if</span> (oldBeanDefinition != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="comment">//省略代码。。。。</span></span><br><span class="line">            <span class="comment">//重点</span></span><br><span class="line">			<span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> (hasBeanCreationStarted()) &#123;</span><br><span class="line">				<span class="comment">// Cannot modify startup-time collection elements anymore (for stable iteration)</span></span><br><span class="line">				<span class="keyword">synchronized</span> (<span class="keyword">this</span>.beanDefinitionMap) &#123;</span><br><span class="line">                    <span class="comment">//重点</span></span><br><span class="line">					<span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">					List&lt;String&gt; updatedDefinitions = <span class="keyword">new</span> ArrayList&lt;&gt;(<span class="keyword">this</span>.beanDefinitionNames.size() + <span class="number">1</span>);</span><br><span class="line">					updatedDefinitions.addAll(<span class="keyword">this</span>.beanDefinitionNames);</span><br><span class="line">					updatedDefinitions.add(beanName);</span><br><span class="line">					<span class="keyword">this</span>.beanDefinitionNames = updatedDefinitions;</span><br><span class="line">					<span class="keyword">if</span> (<span class="keyword">this</span>.manualSingletonNames.contains(beanName)) &#123;</span><br><span class="line">						Set&lt;String&gt; updatedSingletons = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(<span class="keyword">this</span>.manualSingletonNames);</span><br><span class="line">						updatedSingletons.remove(beanName);</span><br><span class="line">						<span class="keyword">this</span>.manualSingletonNames = updatedSingletons;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// Still in startup registration phase</span></span><br><span class="line">                <span class="comment">//重点</span></span><br><span class="line">				<span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">				<span class="keyword">this</span>.beanDefinitionNames.add(beanName);</span><br><span class="line">				<span class="keyword">this</span>.manualSingletonNames.remove(beanName);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">this</span>.frozenBeanDefinitionNames = <span class="keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (oldBeanDefinition != <span class="keyword">null</span> || containsSingleton(beanName)) &#123;</span><br><span class="line">			resetBeanDefinition(beanName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看出来     ***this.beanDefinitionMap.put(beanName, beanDefinition);  整个注册过程，重点就是这一句，IOC容器就是通过这个ConcurrentHashMap来维护BeanDefinition的，key是BeanName，value是BeanDefinition。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Map of bean definition objects, keyed by bean name */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, BeanDefinition&gt; beanDefinitionMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;(<span class="number">256</span>);</span><br></pre></td></tr></table></figure>
-
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>到这里，这个IOC的初始化就完成了。<strong>首先从资源的定位、转换为Document对象，然后进行解析，最后注册到IOC容器中</strong>。此时IOC容器已经有Bean的定义信息，已经为注入打好了基础。</p>
-<p>接下来我们进入Bean的加载阶段。</p>
-<p><img src="/2020/05/04/spring-IOC/image-20200504173907100.png" alt></p>
-<blockquote>
-<p>参考列表：</p>
-<ol>
-<li><a href="http://cmsblogs.com/?cat=206" target="_blank" rel="noopener">http://cmsblogs.com/?cat=206</a></li>
-</ol>
-</blockquote>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/05/04/spring-IOC/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -683,108 +711,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/28/AQS4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/28/AQS4/" class="post-title-link" itemprop="url">Java基础之JUC(四)ReentrantReadWriteLock</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-28 23:26:05" itemprop="dateCreated datePublished" datetime="2020-04-28T23:26:05+08:00">2020-04-28</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/04/28/AQS4/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/28/AQS4/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>前面介绍了AQS的共享模式和独占模式，以及Condition功能，共享锁以CountDownLatch为例，排他锁则是以ReentrantLock为例。这篇文章就一起学习ReentrantReadWriteLock，在ReentrantReadWriteLock中包括读锁和写锁，读锁可以多线程访问，属于共享锁，写锁属于排它锁，更改的时候不允许其他线程访问。同时写锁也提供了Condition机制。不允许读写共存，但是可以读读共存。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/28/AQS4/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -853,7 +779,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">29</span>
+          <span class="site-state-item-count">30</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -902,12 +828,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">206k</span>
+    <span title="站点总字数">233k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">3:07</span>
+    <span title="站点阅读时长">3:32</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
