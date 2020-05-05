@@ -1,6 +1,6 @@
 ---
 title: 深入JVM之Java内存区域
-date: 2020-05-03 14:45:11
+date: 2020-02-16 14:45:11
 tags: Java JVM
 categories: Jvm相关
 ---
