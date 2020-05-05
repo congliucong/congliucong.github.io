@@ -24,20 +24,20 @@
   <meta name="description" content="IOC是Spring最为核心的概念，我们开始逐步对IOC进行拆解。争取能将IOC原理以及工作流程理解的更加透彻。 加油ヾ(◍°∇°◍)ﾉﾞ">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spring之IOC(一)容器初始化">
-<meta property="og:url" content="http://yoursite.com/2020/05/04/spring-IOC/index.html">
+<meta property="og:url" content="http://yoursite.com/2020/03/21/spring-IOC/index.html">
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="IOC是Spring最为核心的概念，我们开始逐步对IOC进行拆解。争取能将IOC原理以及工作流程理解的更加透彻。 加油ヾ(◍°∇°◍)ﾉﾞ">
-<meta property="og:image" content="http://yoursite.com/2020/05/04/spring-IOC/image-20200504175723499.png">
-<meta property="og:image" content="http://yoursite.com/2020/05/04/spring-IOC/spring-201805091003.jpg">
-<meta property="og:image" content="http://yoursite.com/2020/05/04/spring-IOC/image-20200504173907100.png">
-<meta property="article:published_time" content="2020-05-04T06:58:41.000Z">
-<meta property="article:modified_time" content="2020-05-05T03:05:14.060Z">
+<meta property="og:image" content="http://yoursite.com/2020/03/21/spring-IOC/image-20200504175723499.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/21/spring-IOC/spring-201805091003.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/03/21/spring-IOC/image-20200504173907100.png">
+<meta property="article:published_time" content="2020-03-21T06:58:41.000Z">
+<meta property="article:modified_time" content="2020-05-05T11:53:49.972Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/05/04/spring-IOC/image-20200504175723499.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/03/21/spring-IOC/image-20200504175723499.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/05/04/spring-IOC/">
+<link rel="canonical" href="http://yoursite.com/2020/03/21/spring-IOC/">
 
 
 <script id="page-configurations">
@@ -210,7 +210,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/04/spring-IOC/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/21/spring-IOC/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -233,7 +233,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-05-04 14:58:41" itemprop="dateCreated datePublished" datetime="2020-05-04T14:58:41+08:00">2020-05-04</time>
+              <time title="创建时间：2020-03-21 14:58:41" itemprop="dateCreated datePublished" datetime="2020-03-21T14:58:41+08:00">2020-03-21</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -254,8 +254,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/05/04/spring-IOC/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/04/spring-IOC/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/03/21/spring-IOC/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/03/21/spring-IOC/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -291,7 +291,7 @@
 <h2 id="什么是IOC"><a href="#什么是IOC" class="headerlink" title="什么是IOC"></a>什么是IOC</h2><p><strong>IOC全称Inversion of Control，意思为控制反转，IOC作用就是由Spring IOC容器来负责对象的生命周期以及对象之间的关系</strong>。</p>
 <p>通俗的讲，就是在传统开发模式中，我们需要对象，就直接以new一个对象的方式来创建对象。有了IOC容器之后，对象的控制的交给IOC容器来进行管理，并且我们使用对象也不再是自己管理，而且所依赖的对象直接有IOC容器创建后注入到我们手里，依赖的对象获取由原来的主动变为了被动。这也就是IOC为什么又称控制反转的意思。</p>
 <p>IOC可以通过 构造器注入、setter方法注入以及接口注入三种方式。</p>
-<h2 id="IOC源码解析"><a href="#IOC源码解析" class="headerlink" title="IOC源码解析"></a>IOC源码解析</h2><h3 id="IOC实例"><a href="#IOC实例" class="headerlink" title="IOC实例"></a>IOC实例</h3><p><img src="/2020/05/04/spring-IOC/image-20200504175723499.png" alt></p>
+<h2 id="IOC源码解析"><a href="#IOC源码解析" class="headerlink" title="IOC源码解析"></a>IOC源码解析</h2><h3 id="IOC实例"><a href="#IOC实例" class="headerlink" title="IOC实例"></a>IOC实例</h3><p><img src="/2020/03/21/spring-IOC/image-20200504175723499.png" alt></p>
 <p>我们仍以前面介绍循环依赖的例子开始，第一种方式获取bean我们最后再讲，我们首先从第二种方式开始。</p>
 <p>从xml到一个可以使用的Bean对象，这整个过程，我们可以分为两个阶段：</p>
 <ol>
@@ -312,7 +312,7 @@
 <li>资源定位</li>
 </ol>
 <p><strong>org.springframework.core.io.Resource</strong>类作为Spring框架所有资源的抽象和访问接口，由子类AbstractResource提供统一的默认实现。类图如下：</p>
-<p><img src="/2020/05/04/spring-IOC/spring-201805091003.jpg" alt></p>
+<p><img src="/2020/03/21/spring-IOC/spring-201805091003.jpg" alt></p>
 <p>可以看出我们上面的例子是使用ClassPathResource ： class path类型资源的实现</p>
 <ol start="2">
 <li>资源装载</li>
@@ -363,7 +363,7 @@
 
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>到这里，这个IOC的初始化就完成了。<strong>首先从资源的定位、转换为Document对象，然后进行解析，最后注册到IOC容器中</strong>。此时IOC容器已经有Bean的定义信息，已经为注入打好了基础。</p>
 <p>接下来我们进入Bean的加载阶段。</p>
-<p><img src="/2020/05/04/spring-IOC/image-20200504173907100.png" alt></p>
+<p><img src="/2020/03/21/spring-IOC/image-20200504173907100.png" alt></p>
 <blockquote>
 <p>参考列表：</p>
 <ol>
@@ -388,11 +388,11 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
-      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
+    <a href="/2020/03/21/dubbo/" rel="prev" title="Dubbo原理之概述">
+      <i class="fa fa-chevron-left"></i> Dubbo原理之概述
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/05/04/spring-IOC2/" rel="next" title="Spring之IOC(二)加载bean">
+    <a href="/2020/03/28/spring-IOC2/" rel="next" title="Spring之IOC(二)加载bean">
       Spring之IOC(二)加载bean <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
