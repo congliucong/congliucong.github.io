@@ -21,19 +21,21 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="Redis的数据结构 string 最简单的类型，可以做为简单的kv缓存  list   有序队列，可以存储一些列表型的数据结构、通过lrange实现分页、也可以作为队列  hash  类似于map的接口、一般用来存储结构化的对象  set  无序结合，自动去重，可以用来计算交集、并集、差集  sort set  排序的set，通过sorce自动排序。数据结构是跳跃表 redis过期策略redis">
+  <meta name="description" content="在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis知识归纳(二)过期策略">
-<meta property="og:url" content="http://yoursite.com/2020/04/02/redis2/index.html">
+<meta property="og:title" content="分布式事务之解决方案">
+<meta property="og:url" content="http://yoursite.com/2020/04/18/transaction-solution/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="Redis的数据结构 string 最简单的类型，可以做为简单的kv缓存  list   有序队列，可以存储一些列表型的数据结构、通过lrange实现分页、也可以作为队列  hash  类似于map的接口、一般用来存储结构化的对象  set  无序结合，自动去重，可以用来计算交集、并集、差集  sort set  排序的set，通过sorce自动排序。数据结构是跳跃表 redis过期策略redis">
-<meta property="article:published_time" content="2020-04-02T14:03:50.000Z">
-<meta property="article:modified_time" content="2020-05-06T12:02:18.135Z">
+<meta property="og:description" content="在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。">
+<meta property="og:image" content="http://yoursite.com/2020/04/18/transaction-solution/image-20200506230455505.png">
+<meta property="article:published_time" content="2020-04-18T13:58:07.000Z">
+<meta property="article:modified_time" content="2020-05-06T16:26:20.698Z">
 <meta property="article:author" content="Lcc">
-<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="分布式事务">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/18/transaction-solution/image-20200506230455505.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/04/02/redis2/">
+<link rel="canonical" href="http://yoursite.com/2020/04/18/transaction-solution/">
 
 
 <script id="page-configurations">
@@ -46,7 +48,7 @@
   };
 </script>
 
-  <title>Redis知识归纳(二)过期策略 | Lcccc</title>
+  <title>分布式事务之解决方案 | Lcccc</title>
   
 
 
@@ -206,7 +208,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/02/redis2/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/18/transaction-solution/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -219,7 +221,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Redis知识归纳(二)过期策略
+          分布式事务之解决方案
         </h1>
 
         <div class="post-meta">
@@ -229,7 +231,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-04-02 22:03:50" itemprop="dateCreated datePublished" datetime="2020-04-02T22:03:50+08:00">2020-04-02</time>
+              <time title="创建时间：2020-04-18 21:58:07" itemprop="dateCreated datePublished" datetime="2020-04-18T21:58:07+08:00">2020-04-18</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -237,7 +239,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
                 </span>
             </span>
 
@@ -250,8 +252,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/04/02/redis2/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/02/redis2/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/04/18/transaction-solution/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/18/transaction-solution/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -261,14 +263,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>631</span>
+              <span>2.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -280,39 +282,81 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h3><ol>
-<li><p>string</p>
-<p>最简单的类型，可以做为简单的kv缓存</p>
-</li>
-<li><p>list</p>
-</li>
-</ol>
-<p>有序队列，可以存储一些列表型的数据结构、通过lrange实现分页、也可以作为队列</p>
-<ol start="3">
-<li>hash</li>
-</ol>
-<p>类似于map的接口、一般用来存储结构化的对象</p>
-<ol start="4">
-<li>set</li>
-</ol>
-<p>无序结合，自动去重，可以用来计算交集、并集、差集</p>
-<ol start="5">
-<li>sort set</li>
-</ol>
-<p>排序的set，通过sorce自动排序。数据结构是跳跃表</p>
-<h3 id="redis过期策略"><a href="#redis过期策略" class="headerlink" title="redis过期策略"></a>redis过期策略</h3><p>redis 的过期策略是 ：<strong>定期删除 + 惰性删除</strong>。</p>
-<p>定期删除指的是：redis每秒10次，即每100ms<strong>随机抽取</strong>一些设置了过期时间的key，检查其是否过期，如果过期，就从redis中删除。如果有多于25%的keys过期，那么就再来一次。</p>
-<p>惰性删除指的是：当获取 某个key的时候，如果key已经过期，那么不返回任何东西，并且删除。</p>
-<p>当然以上策略是不能够保证所有过期的key都删除的，因此还需要内存淘汰机制：</p>
+        <p>在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。</p>
+<a id="more"></a>
+
+<p>在介绍分布式方案前，我们先对几个分布式相关理论进行总结。</p>
+<h3 id="CAP理论"><a href="#CAP理论" class="headerlink" title="CAP理论"></a>CAP理论</h3><p>CAP理论指的是 在一个分布式系统中，最多只能满足C A P中的两个需求。其中，</p>
 <ol>
-<li>volatile-lru（Least recently used） : 从设置了过期时间的集合中删除最近最久未使用的。</li>
-<li>allkeys-lru : 所有key中删除最久未使用的。</li>
-<li>volatile- lfu （Least frequently used）: 从设置了过期时间的集合中删除最近最少使用的。</li>
-<li>allkeys-lfu : 从所有keys中删除最近最少使用的。</li>
-<li>volatile-random : 从设置了过期时间的结合中随机删除。</li>
-<li>allkeys-random : 从所有keys中随机删除</li>
-<li>volatile-ttl : 设置了过期时间里面ttl最少的。</li>
-<li>啥也不做</li>
+<li>C : Consistency <strong>一致性</strong>。指的是同一个数据多个实例中是否实时相同。</li>
+<li>A ：Availability <strong>可用性</strong>。一定时间内、系统可以返回一个明确的结果，则表示该系统可用。</li>
+<li>P ：Partition tolerance : <strong>分区容错性</strong>。即使出现单个服务实例宕机，分布式系统中其他服务实例仍然可以提供服务。</li>
+</ol>
+<p>首先，我们需要明确的是，在这三个属性中，<strong>分区容错性是首先需要保证的</strong>，不然分布式系统也就没有意义了。所以我们只能在 <strong>一致性</strong> 和 <strong>可用性</strong> 之间选择。对于我们业务系统来说，<strong>首先要保证的是系统的可用性</strong>，如果系统因为系统异常、响应时间过长等导致系统不可用，那么系统也就没有存在的意义。</p>
+<p>另外，对于我们分布式系统来说，注册中心是比不可少的。因此我们可以进行对比：</p>
+<ol>
+<li><strong>zookeeper支持CP</strong>，任何时刻对zk进行访问，都能得到一致性的结果。当zk进行leader选举的时候，zk集权是不对外提供服务的。这个我们对ZK原理讲解的时候再来探讨。</li>
+<li><strong>Eureka支持AP</strong>，Eureka集群中，所有节点都是平等的，所以即使其中某台实例宕机，也会将请求自动转发到其他节点，所以是支持可用性，但是不能保证一致性，因为各节点之间异步复制，所有可能存在某个时刻节点之间数据不同。</li>
+</ol>
+<h3 id="BASE理论"><a href="#BASE理论" class="headerlink" title="BASE理论"></a>BASE理论</h3><p>BASE理论是对CAP中一致性和可用性之间做的权衡。</p>
+<p>BASE理论说的是：</p>
+<ol>
+<li><strong>Basic Available 基本可用</strong>。系统在某些极端情况下，仍然可以保证可用性，即一定时间内仍然可以返回一个明确的结果。</li>
+<li><strong>Soft state（软状态）</strong>。同一数据在不同实例中，可以不需要保持实时一致。</li>
+<li><strong>Eventually consistent（最终一致性）</strong>。虽然不需要实时一致，但是要保证在经过一定时间后仍然是一致的。</li>
+</ol>
+<p>所以BASE理论的核心思想是：<strong>虽然无法做到强一致性，但是我们可以降低要求，采用适当的方式达到最终一致性。</strong></p>
+<h3 id="分布式事务解决方案"><a href="#分布式事务解决方案" class="headerlink" title="分布式事务解决方案"></a>分布式事务解决方案</h3><h4 id="2PC-二阶段提交"><a href="#2PC-二阶段提交" class="headerlink" title="2PC 二阶段提交"></a>2PC 二阶段提交</h4><p>2PC即两阶段提交协议，将整个事务流程分为两个阶段，</p>
+<p>*<em>1. 准备阶段 *</em></p>
+<p>事务管理器给每个参与者发送prepare消息，每个数据库参与者在本地执行事务，并写本地undo/redo日志，此时事务还没有提交。（undo日志是记录修改前的数据，用于数据库回滚。redo日志是记录修改后的数据，用于提交事务后写入数据文件）</p>
+<p><strong>2.提交阶段</strong></p>
+<p>如果事务管理器收到了参与者的执行失败或者超时信息，直接给每个参与者发送回滚rollback消息；否则，发送提交信息。参与者根据事务管理器的执行进行提交或者回滚操作，并释放事务处理过程中的锁资源。</p>
+<p><img src="/2020/04/18/transaction-solution/image-20200506230455505.png" alt></p>
+<h4 id="3PC-三阶段提交"><a href="#3PC-三阶段提交" class="headerlink" title="3PC 三阶段提交"></a>3PC 三阶段提交</h4><p>三阶段比二阶段有两个改动点：</p>
+<ol>
+<li>引入超时机制。同时在协调者和参与者都引入了超时机制</li>
+<li>在第一个阶段和第二个阶段引入一个准备阶段。</li>
+</ol>
+<p>因此整个事务流程分为三个阶段：</p>
+<p><strong>1. CanCommit阶段</strong></p>
+<p>协调者向参与者发送cancommit请求，询问是否可以执行事务，然后等待参与者的响应。参与者认为自身可以顺利执行事务，则返回yes，并且进入预备状态，否则返回no。</p>
+<p><strong>2.PreCommit阶段</strong></p>
+<p>协调者根据参与者的返回情况作出不同的反应：</p>
+<ol>
+<li><strong>如果第一阶段所有参与者反馈都是yes</strong>，那么 协调者向参与者发送PreCommit请求，并且 进入PrePared阶段；参与者接收到PreCommit请求后，执行事务操作，并将写本地undo/redo日志；如果参与者成功执行了事务操作，则返回ack响应，并且等待最终指令。</li>
+<li><strong>如果第一阶段有任何一个参与者发送了No或者等待超时之后，协调者都没有收到参与者的响应</strong>，就执行事务的abort操作。协调者向所有参与者发送abort请求，那么整个事务到此结束，说明第一阶段没有参与者没有准备好。</li>
+</ol>
+<p><strong>3.doCommit阶段</strong></p>
+<p>这个阶段执行真正的事务提交，也可以分为以下两种情况：</p>
+<ol>
+<li><strong>执行提交</strong>。</li>
+</ol>
+<p>协调者向接受到所有参与者的第二阶段的ack响应，那么协调者的状态由预提交状态进入提交状态，并向所有参与者发送doCommit请求。</p>
+<p>参与者接收到doCommit请求后，执行真正的事务提交，并在事务提交后，释放所有事务资源，并且向协调者发送ack响应。</p>
+<p>协调者接收到所有参与者的第三阶段的ack响应后，完成事务。</p>
+<p><strong>2.中断事务</strong></p>
+<p>协调者没有接收到参与者第二阶段的ack响应，那么就执行中断事务。协调者向所有参与者发送abort请求。</p>
+<p>参与者接受到abort请求之后，利用其在第二阶段的undo信息来执行事务的回滚操作，并在回滚之后释放所有事务资源。</p>
+<p>参与者完成事务回滚之后，向协调者发送ack消息。</p>
+<p>协调者接收到参与者的ack消息之后，结束整个事务。</p>
+<h3 id="TCC-补偿式事务"><a href="#TCC-补偿式事务" class="headerlink" title="TCC 补偿式事务"></a>TCC 补偿式事务</h3><p>TCC即 Try Commit Cancel，采用补偿机制。</p>
+<p><strong>1.Try</strong>  尝试待执行的业务</p>
+<p>这个过程并未真正执行业务，只是完成所有业务的一致性检查，并预留好执行所需的全部资源。</p>
+<p><strong>2.Confirm</strong> 执行业务</p>
+<p>这个过程真正开始执行业务，由于第一阶段已经完成了一致性检查，因此本过程直接执行，并不做任何检查，并且在执行的过程，会使用Try阶段预留的业务资源</p>
+<p><strong>3.Cancel</strong> : 取消执行的业务</p>
+<p>如果业务执行失败，则进入Cancel阶段，它会释放所有占用的业务资源，并且回滚Confirm阶段进行的操作。</p>
+<p>缺点就是：<strong>大量业务侵入代码，每个分支都需要try confirm cancel三个操作</strong>。</p>
+<h3 id="本地消息表"><a href="#本地消息表" class="headerlink" title="本地消息表"></a>本地消息表</h3><p>本地消息表也正是目前我们项目中使用到的方案，下面进行具体介绍。</p>
+<ol>
+<li>A系统执行本地事务，并且在A系统的消息表中插入一条记录，状态为待确认，这两个操作在一个事务中，因为在同一个数据库，因此可以保证。</li>
+<li>准备一个后台程序，源源不断的把消息表中的message传送给MQ。如果失败，则重试，可以允许数据重复。</li>
+<li>B系统作为消费者，接收到MQ的消息，在一个事务中，首先在B系统的消息表中插入一条数据，然后执行B系统的业务逻辑。<ol>
+<li>如果判重表中存在 ，说明已经消费过这条数据，那么不执行业务逻辑，实现幂等性。</li>
+<li>如果B系统业务操作成功，则更新消息表的状态，然后通知A系统修改A系统的消息表状态为成功。</li>
+<li>如果B系统业务操作失败则事务回滚，则不去通知A系统修改A系统的消息表。因为A系统的定时任务会不断轮询自己的消息表，将待确认的消息继续重新发送给B直到B成功为止。</li>
+</ol>
+</li>
 </ol>
 
     </div>
@@ -323,7 +367,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Redis/" rel="tag"># Redis</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" rel="tag"># 分布式事务</a>
           </div>
 
         
@@ -332,12 +376,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/01/redis/" rel="prev" title="Redis知识归纳(一)Redis为什么这么快？">
-      <i class="fa fa-chevron-left"></i> Redis知识归纳(一)Redis为什么这么快？
+    <a href="/2020/04/17/seata/" rel="prev" title="分布式事务之初识seata">
+      <i class="fa fa-chevron-left"></i> 分布式事务之初识seata
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/04/02/redis3/" rel="next" title="Redis知识归纳(三)管道（Pipelining）">
-      Redis知识归纳(三)管道（Pipelining） <i class="fa fa-chevron-right"></i>
+    <a href="/2020/04/19/mysql/" rel="next" title="Mysql之事务篇">
+      Mysql之事务篇 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -398,7 +442,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis的数据结构"><span class="nav-number">1.</span> <span class="nav-text">Redis的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#redis过期策略"><span class="nav-number">2.</span> <span class="nav-text">redis过期策略</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAP理论"><span class="nav-number">1.</span> <span class="nav-text">CAP理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BASE理论"><span class="nav-number">2.</span> <span class="nav-text">BASE理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分布式事务解决方案"><span class="nav-number">3.</span> <span class="nav-text">分布式事务解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2PC-二阶段提交"><span class="nav-number">3.1.</span> <span class="nav-text">2PC 二阶段提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3PC-三阶段提交"><span class="nav-number">3.2.</span> <span class="nav-text">3PC 三阶段提交</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TCC-补偿式事务"><span class="nav-number">4.</span> <span class="nav-text">TCC 补偿式事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#本地消息表"><span class="nav-number">5.</span> <span class="nav-text">本地消息表</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
