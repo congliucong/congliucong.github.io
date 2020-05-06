@@ -1,5 +1,5 @@
 ---
-title: Redis知识归纳(五)Redis常见问题
+title: Redis知识归纳(六)Redis常见问题
 date: 2020-04-04 15:43:21
 tags: Redis
 categories: Redis

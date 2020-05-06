@@ -1,5 +1,5 @@
 ---
-title: Redis知识归纳(二)
+title: Redis知识归纳(二)过期策略
 date: 2020-04-02 22:03:50
 tags: Redis
 categories: Redis

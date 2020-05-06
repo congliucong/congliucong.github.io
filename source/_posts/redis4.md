@@ -1,5 +1,5 @@
 ---
-title: Redis知识归纳(三)高可用、高并发
+title: Redis知识归纳(四)高可用、高并发
 date: 2020-04-02 22:49:40
 tags: Redis
 categories: Redis
