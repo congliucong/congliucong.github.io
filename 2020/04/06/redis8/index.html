@@ -21,16 +21,22 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="好好学习，天天向上">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Lcccc">
-<meta property="og:url" content="http://yoursite.com/categories/Mysql/index.html">
+  <meta name="description" content="Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis知识归纳(八)Redis事务">
+<meta property="og:url" content="http://yoursite.com/2020/04/06/redis8/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="好好学习，天天向上">
+<meta property="og:description" content="Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。">
+<meta property="og:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212947691.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212821417.png">
+<meta property="article:published_time" content="2020-04-06T13:05:35.000Z">
+<meta property="article:modified_time" content="2020-05-06T13:37:08.106Z">
 <meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Redis">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212947691.png">
 
-<link rel="canonical" href="http://yoursite.com/categories/Mysql/">
+<link rel="canonical" href="http://yoursite.com/2020/04/06/redis8/">
 
 
 <script id="page-configurations">
@@ -38,12 +44,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-Hans'
   };
 </script>
 
-  <title>分类: Mysql | Lcccc</title>
+  <title>Redis知识归纳(八)Redis事务 | Lcccc</title>
   
 
 
@@ -196,57 +202,152 @@
         <div class="content-wrap">
           
 
-          <div class="content category">
+          <div class="content post posts-expand">
             
 
+    
   
   
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/06/redis8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis知识归纳(八)Redis事务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-06 21:05:35" itemprop="dateCreated datePublished" datetime="2020-04-06T21:05:35+08:00">2020-04-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          
   
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">Mysql
-          <small>分类</small>
-        </h2>
-      </div>
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/06/redis8/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/06/redis8/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>757</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2020</span>
+        <p>Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。</p>
+<a id="more"></a>
+
+<p>事务可以一次性执行多个命令，并且带有一下两个重要的保证：</p>
+<ol>
+<li>事务是一个单独的隔离操作：事务中的所有命令都会序列化、按顺序的执行。事务在执行期间，不会被其他客户端发送来的命令打断。</li>
+<li>事务是一个原子操作。</li>
+</ol>
+<h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><p>MULTI 命令用于开启一个事务，当MULTI执行之后，客户端可以继续向服务器发送任意多条指令，这些指令不会被立即执行，而是放在一个队列中，当EXEC命令执行的时候，所有队列中的命令才会被执行。</p>
+<p>如果调用DISCARD，客户端可以清空事务队列，并放弃执行事务。</p>
+<p>但是需要注意的是：</p>
+<ol>
+<li>如果事务队列中存在命令性错误，类似java编译性错误，那么执行exec时，所有命令都不执行。</li>
+</ol>
+<p><img src="/2020/04/06/redis8/image-20200506212947691.png" alt></p>
+<ol start="2">
+<li>事务队列中存在语法错误错误，类似java中的1/0的运行时异常，那么执行exec后，其余正确的命令会被执行，错误命令抛出异常。</li>
+</ol>
+<p><img src="/2020/04/06/redis8/image-20200506212821417.png" alt></p>
+<h3 id="为什么Redis不支持回滚"><a href="#为什么Redis不支持回滚" class="headerlink" title="为什么Redis不支持回滚"></a>为什么Redis不支持回滚</h3><ol>
+<li>Redis命令只会因为错误的语法而失败或者命令用在了错误类型的键上，这也就是说，从实用性的角度来说，失败的命令是由编程错误造成的，这些错误应该再开发的过程中被发现，而不应该出现在生产环境中。</li>
+<li>因为不需要对回滚进行支持，所以Redis内部可以保持简单且快速。</li>
+</ol>
+<h4 id="Redis事务的CAS方案"><a href="#Redis事务的CAS方案" class="headerlink" title="Redis事务的CAS方案"></a>Redis事务的CAS方案</h4><p>WATCH命令可以为Redis事务提供CAS保证。</p>
+<p>被WATCH的键会被监视，并会发现这些键是否被改动过，如果有至少一个被监视的键在EXEC执行前被修改，那么整个事务都会被取消。</p>
+<h4 id="如何保证Redis并发竞争问题"><a href="#如何保证Redis并发竞争问题" class="headerlink" title="如何保证Redis并发竞争问题"></a>如何保证Redis并发竞争问题</h4><p>如果有多客户端并发同时写一个key，可能本来应该先到的数据后到了，导致数据版本发生错误。</p>
+<p>我们可以使用Redis自带的CAS乐观锁方案。也可以基于ZK 实现分布式锁，确保同一时间只有一个系统实例可以在操作某个key。</p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2020-04-19T13:52:55+08:00"
-              content="2020-04-19">
-          04-19
-        </time>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Redis/" rel="tag"># Redis</a>
+          </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/04/19/mysql/" itemprop="url">
-            <span itemprop="name">Mysql之事务篇</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/06/redis7/" rel="prev" title="Redis知识归纳(七)缓存与数据库双写一致性">
+      <i class="fa fa-chevron-left"></i> Redis知识归纳(七)缓存与数据库双写一致性
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/16/sort/" rel="next" title="重学算法之排序">
+      重学算法之排序 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
   </article>
-
-    </div>
-  </div>
   
   
-  
-
   
 
 
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -293,6 +394,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#用法"><span class="nav-number">1.</span> <span class="nav-text">用法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Redis不支持回滚"><span class="nav-number">2.</span> <span class="nav-text">为什么Redis不支持回滚</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis事务的CAS方案"><span class="nav-number">2.1.</span> <span class="nav-text">Redis事务的CAS方案</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何保证Redis并发竞争问题"><span class="nav-number">2.2.</span> <span class="nav-text">如何保证Redis并发竞争问题</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
