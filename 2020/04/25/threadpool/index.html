@@ -47,7 +47,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/04/25/threadpool/640-1587907007892.png">
 <meta property="og:image" content="http://yoursite.com/2020/04/25/threadpool/image-20200426212402444.png">
 <meta property="article:published_time" content="2020-04-25T12:37:09.000Z">
-<meta property="article:modified_time" content="2020-04-27T14:20:24.899Z">
+<meta property="article:modified_time" content="2020-05-06T11:59:13.283Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
@@ -454,7 +454,7 @@
 <p>然而，要想使线程池动态化并且健壮性强的话，光支持动态调参，是不够的。配套的应该还有</p>
 <ol>
 <li>任务监控，能够监控线程池任务执行情况、最大任务执行时间、平均执行时间等等</li>
-<li>负载告警，当线程池队列中任务积压到一定值时能够通知到运维。</li>
+<li>负载告警，当线程池队列中任务积压到一定值时能够通知到运维。线程池定义了“活跃度”这个概念，来让用户在发生Reject异常之前能够感知线程池负载问题，线程池活跃度计算公式为：线程池活跃度 = activeCount/maximumPoolSize。这个公式代表当活跃线程数趋向于maximumPoolSize的时候，代表线程负载趋高。</li>
 <li>操作监控，创建、修改和删除线程池都要有通知机制</li>
 <li>操作日志</li>
 <li>权限校验等，并不是所有人都能够改线程池参数。</li>
@@ -617,7 +617,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-count">37</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -666,12 +666,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">238k</span>
+    <span title="站点总字数">244k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">3:36</span>
+    <span title="站点阅读时长">3:41</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
