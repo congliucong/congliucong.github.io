@@ -19,7 +19,7 @@ Java虚拟机在执行Java程序的时候，会把内存划分为若干个不同
 
 ### 程序计数器
 
-当前程序所执行的字节码的行号指示器，它是程序控制流的指示器、分支、循环、跳转、异常处理、线程恢复等基础工鞥呢都需要依赖这个程序计数器。每条线程都需要有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储，这类内存区域为线程私有的内存。如果线程执行的是Java方法，那么这个计数器则记录的是正在执行的虚拟机字节码指令的地址；如果执行的本地方法，那么计数器为空。
+当前程序所执行的字节码的行号指示器，它是程序控制流的指示器、分支、循环、跳转、异常处理、线程恢复等基础工作都需要依赖这个程序计数器。每条线程都需要有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储，这类内存区域为线程私有的内存。如果线程执行的是Java方法，那么这个计数器则记录的是正在执行的虚拟机字节码指令的地址；如果执行的本地方法，那么计数器为空。
 
 ### Java虚拟机栈
 
@@ -132,7 +132,75 @@ Java堆是所有线程共享的一块内存区域，在虚拟机启动时创建�
 
 #### 初始化
 
-类的初始化是类加载过程的最后一个步骤。初始化阶段是执行类构造器的<clinit>方法的过程。<clinit>方法是编译器自动收集类中的所有类变量的赋值动作和静态代码块中的语句合并产生的
+类的初始化是类加载过程的最后一个步骤。初始化阶段是执行类构造器的<clinit>方法的过程。<clinit>方法是编译器自动收集类中的所有类变量的赋值动作和静态代码块中的语句合并产生的。
+
+### 类加载器
+
+#### 什么是类加载器
+
+类加载第一个过程--加载就是“根据类的全限定名去获取描述该类的二进制字节流”，完成这个动作的代码就叫做“类加载器”。对于任何一个类，必须由加载它的类加载器和这个类本身一起才能公共确定其在Java虚拟机中的唯一性。也就说，比较两个类是否相等，只有这两个类是同一个类加载器加载的前提下才有意义。
+
+#### 双亲委派模型
+
+提到类加载器，就不得不提大名鼎鼎的双亲委派模型。我们先从传统经典的三层类加载器说起。
+
+启动类加载器 Bootstrap Class Loader。这个类加载器负责加载存在在lib目录下的类。类加载器无法被Java程序直接饮用。
+
+扩展类加载器 Extension Class Loader。这个类加载器主要加载lib\ext目录下的类。
+
+应用程序类加载器 Applicationn Class Loader。这个类加载器负责加载用户类路径上所有的类库。如果没有自定义自己的类加载器，一般这个就是默认的类加载器。
+
+![](jvm4/classLoader.jpg)
+
+上图就是不同层次之间的类加载器的双亲委派模型，但是它们的关系不是继承关系，而是组合关系。
+
+双亲委派模型的工作过程是:如果一个类加载器收到了类加载的请求，它首先不会自己去尝试加载这个类，而是把这个请求委派给父类加载器去完成，因此所有的加载请求最终会传送到最顶层的Bootstrap Class Loader。只有当父加载器无法完成这个加载时，子加载器才会尝试自己去加载完成。
+
+这样的好处是：Java中的类随着它的类加载器一起具备了带优先级的层次关系。比如Object类，无论哪一个类加载器要加载这个类，都会委派给最顶层的Bootstrap ClassLoader加载，这样保证程序在各种类加载器中都能保证是同一个类。
+
+```java
+    protected Class<?> loadClass(String name, boolean resolve)
+        throws ClassNotFoundException
+    {
+        synchronized (getClassLoadingLock(name)) {
+            // First, check if the class has already been loaded
+            Class<?> c = findLoadedClass(name);
+            if (c == null) {
+                long t0 = System.nanoTime();
+                try {
+                    if (parent != null) {
+                        c = parent.loadClass(name, false);
+                    } else {
+                        c = findBootstrapClassOrNull(name);
+                    }
+                } catch (ClassNotFoundException e) {
+                    // ClassNotFoundException thrown if class not found
+                    // from the non-null parent class loader
+                }
+
+                if (c == null) {
+                    // If still not found, then invoke findClass in order
+                    // to find the class.
+                    long t1 = System.nanoTime();
+                    c = findClass(name);
+
+                    // this is the defining class loader; record the stats
+                    sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);
+                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+                    sun.misc.PerfCounter.getFindClasses().increment();
+                }
+            }
+            if (resolve) {
+                resolveClass(c);
+            }
+            return c;
+        }
+    }
+```
+这段代码的逻辑是：先检查请求加载的类是否被加载过，如果没有，则调用父加载器的loadClass方法，如果父加载器为空，则默认使用启动类加载器作为父记载器。假如父类加载器加载失败，则抛出异常，这才调用自己的findClass方法尝试加载。
+
+因此，如果想要实现自定义类加载器，只需要继承ClassLoader类，重写findClass方法即可。
+
 
 ### 总结
 
