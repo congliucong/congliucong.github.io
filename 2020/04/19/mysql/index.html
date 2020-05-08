@@ -27,11 +27,13 @@
 <meta property="og:url" content="http://yoursite.com/2020/04/19/mysql/index.html">
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="这篇文章主要对Mysql的事务相关知识，进行梳理。 目前的思路是通过文章的方式，将各个知识点梳理成体系，以后查漏补缺，复习总结。越来越发现，写文章是一种很好的方式去督促自己不断学习。只有不断学习，提高自己硬实力，这样才能够在日后做到手有余量，心里不慌。">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/mysql/undolog.webp">
 <meta property="article:published_time" content="2020-04-19T05:52:55.000Z">
-<meta property="article:modified_time" content="2020-04-19T12:35:19.048Z">
+<meta property="article:modified_time" content="2020-05-08T12:08:14.961Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Mysql">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/19/mysql/undolog.webp">
 
 <link rel="canonical" href="http://yoursite.com/2020/04/19/mysql/">
 
@@ -261,7 +263,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
+              <span>3.6k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -300,7 +302,7 @@
 <li>持久性</li>
 </ul>
 <p>持久性指的是一旦事务提交，其所做的修改就会永久保存在数据库中。对于Mysql来说，实现持久性是通过<strong>redo log</strong>来实现的，所有修改先写到日志，再更新到缓存，保证数据不会因为宕机而丢失。</p>
-<h3 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h3><p>隔离级别是对事务隔离性的实现，一般来说有四种隔离界别</p>
+<h3 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h3><p>隔离级别是对事务隔离性的实现，一般来说有四种隔离级别</p>
 <ul>
 <li>READ UNCOMMITTED(未提交读)</li>
 </ul>
@@ -322,7 +324,7 @@
 <p>InnoDB通过多版本并发控制（MVCC）解决幻读的问题。</p>
 </blockquote>
 <p>也有说是通过 <strong><em>Next-Key-locks</em></strong> 解决幻读问题。查阅相关资料后，可以看出来两种说法都是正确的，只是针对的角度不一样。下面先说明什么是MVCC 和 Next-Key-locks。</p>
-<h4 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h4><p>MVCC是 多版本并发控制的简称。在InnoDB中，是通过在每行记录后面保存两个隐藏列来实现的MVCC。这两个列，一个保存了行的创建时间，一个保存了行的过期时间（删除时间）。当然，实际存储的是系统版本号。每开启一个新的事物，系统版本号都会自动递增。</p>
+<h4 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h4><p>MVCC是 多版本并发控制的简称。在InnoDB中，是通过在每行记录后面保存两个隐藏列来实现的MVCC。这两个列，一个保存了行的创建时间，一个保存了行的过期时间（删除时间）。当然，实际存储的是系统版本号。每开启一个新的事物，系统版本号都会自动递增。MVCC只在REPEATABLE READ 和 READ COMMITTED 两个隔离级别下工作。</p>
 <ul>
 <li>SELECT</li>
 </ul>
@@ -339,6 +341,20 @@
 <li>UPDATE</li>
 </ul>
 <p>插入一条新记录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来行作为行删除版本号。</p>
+<p><strong>5.8号补充</strong><br>以上内容是《高性能Mysql》的讲述。直到我今天在搜索 <strong>read view</strong>时，看到了不同的说法，并且Mysql官网也确实是这样的。</p>
+<p>InnoDB存储引擎在数据库的每行数据的后面添加了三个字段：</p>
+<ol>
+<li>事务ID(trx_id)：用来表示最近一次对本行记录做修改的事务标识符，即最后一次修改本行记录的事务ID。</li>
+<li>回滚指针（roll_ptr）：通俗的理解为指向undo日志里面数据的上个版本，因为当数据被更新时，undolog会记录该行修改前的内容到undolog。</li>
+<li>行ID(row_id):当表中不存在主键或者唯一索引，用该字段生成聚簇索引的。<br><img src="/2020/04/19/mysql/undolog.webp" alt="https://www.jianshu.com/p/5a9c1e487ddd"></li>
+</ol>
+<p>在REPEATABLE COMMITER 和 REPEATABLE READ不同隔离级别下，read view生成方式和时机不同，read commited 总是读最新一份read view，而repeatable read 读事务开始时的read view。</p>
+<p>可见性比较算法：<br>当前新开事务创建的Read view中最早的事务ID是up_limit_id，最迟的事务id是low_limit_id，trx_ids是活跃事务id列表。</p>
+<ol>
+<li>如果当前事务小于up_limit_id，就是说在创建Read View视图时，之前已经提交的事务对于该事务是可见的。</li>
+<li>当前事务号大于low_limit_id，就是说创建RV视图之后的事务对该事务是不可见的。</li>
+<li>如果当前事务号位于up_limit_id和low_limit_id之间，因为trx_ids是Read View初始化时当前未提交的事务列表。因此在RR读的时候，trx_ids中的事务对于本事务不可见。<br>（这里一脸懵逼，先暂时这么理解吧~）</li>
+</ol>
 <h4 id="Next-Key锁"><a href="#Next-Key锁" class="headerlink" title="Next-Key锁"></a>Next-Key锁</h4><p>Next-Key锁是行锁和GAP（间隙锁）的合并。</p>
 <h5 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h5><p>当表中某条数据进行写操作（insert update delete select for update），需要先获取记录的排它锁，这个称之为行锁。行锁是针对索引加锁的，如果一条SQL语句用不到索引是不会使用行级锁的，会使用表锁。</p>
 <h5 id="GAP锁"><a href="#GAP锁" class="headerlink" title="GAP锁"></a>GAP锁</h5><p>锁定索引记录间隙，确保索引记录的间隙不变。只作用在可重复读的隔离级别下。间隙的范围是向上寻找最靠近检索条件的记录A作为左区间，向下寻找最靠近检索条件的记录B作为右区间，即为锁定的间隙。GAP锁只作用于 非唯一索引（锁区间） 或者 没有索引（给全表加入gap锁）。</p>
@@ -473,7 +489,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-count">42</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -522,12 +538,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">255k</span>
+    <span title="站点总字数">280k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">3:52</span>
+    <span title="站点阅读时长">4:14</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
