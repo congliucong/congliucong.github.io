@@ -31,7 +31,7 @@ categories: Mysql
 
 ### 隔离级别
 
-隔离级别是对事务隔离性的实现，一般来说有四种隔离界别
+隔离级别是对事务隔离性的实现，一般来说有四种隔离级别
 
 * READ UNCOMMITTED(未提交读)
 
@@ -59,7 +59,7 @@ categories: Mysql
 
 #### MVCC
 
-MVCC是 多版本并发控制的简称。在InnoDB中，是通过在每行记录后面保存两个隐藏列来实现的MVCC。这两个列，一个保存了行的创建时间，一个保存了行的过期时间（删除时间）。当然，实际存储的是系统版本号。每开启一个新的事物，系统版本号都会自动递增。
+MVCC是 多版本并发控制的简称。在InnoDB中，是通过在每行记录后面保存两个隐藏列来实现的MVCC。这两个列，一个保存了行的创建时间，一个保存了行的过期时间（删除时间）。当然，实际存储的是系统版本号。每开启一个新的事物，系统版本号都会自动递增。MVCC只在REPEATABLE READ 和 READ COMMITTED 两个隔离级别下工作。
 
 * SELECT
 
@@ -76,6 +76,24 @@ MVCC是 多版本并发控制的简称。在InnoDB中，是通过在每行记录
 * UPDATE
 
 插入一条新记录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来行作为行删除版本号。
+
+**5.8号补充**
+以上内容是《高性能Mysql》的讲述。直到我今天在搜索 **read view**时，看到了不同的说法，并且Mysql官网也确实是这样的。
+
+InnoDB存储引擎在数据库的每行数据的后面添加了三个字段：
+1. 事务ID(trx_id)：用来表示最近一次对本行记录做修改的事务标识符，即最后一次修改本行记录的事务ID。
+2. 回滚指针（roll_ptr）：通俗的理解为指向undo日志里面数据的上个版本，因为当数据被更新时，undolog会记录该行修改前的内容到undolog。
+3. 行ID(row_id):当表中不存在主键或者唯一索引，用该字段生成聚簇索引的。
+![https://www.jianshu.com/p/5a9c1e487ddd](mysql/undolog.webp)
+
+在REPEATABLE COMMITER 和 REPEATABLE READ不同隔离级别下，read view生成方式和时机不同，read commited 总是读最新一份read view，而repeatable read 读事务开始时的read view。
+
+可见性比较算法：
+当前新开事务创建的Read view中最早的事务ID是up_limit_id，最迟的事务id是low_limit_id，trx_ids是活跃事务id列表。
+1. 如果当前事务小于up_limit_id，就是说在创建Read View视图时，之前已经提交的事务对于该事务是可见的。
+2. 当前事务号大于low_limit_id，就是说创建RV视图之后的事务对该事务是不可见的。
+3. 如果当前事务号位于up_limit_id和low_limit_id之间，因为trx_ids是Read View初始化时当前未提交的事务列表。因此在RR读的时候，trx_ids中的事务对于本事务不可见。
+（这里一脸懵逼，先暂时这么理解吧~）
 
 #### Next-Key锁
 
@@ -135,6 +153,7 @@ InnoDB通过 Force log at commit机制保证事务的持久性，即在事务提
 ### undo log
 
 undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要记录全部的操作。undo log主要有两个作用：回滚 和 多版本控制。回滚的时候，实际上做着相反的工作，比如一条insert，对应一条delete，对于每一个update，对应着一个相反的update。正是由于undo log，保证了事务的原子性。
+
 
 > ​	参考内容：
 >
