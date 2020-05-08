@@ -30,7 +30,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/01/26/volatile2/image-20200501132110700.png">
 <meta property="og:image" content="http://yoursite.com/2020/01/26/volatile2/image-20200501134113203.png">
 <meta property="article:published_time" content="2020-01-26T04:50:35.000Z">
-<meta property="article:modified_time" content="2020-05-01T11:21:01.128Z">
+<meta property="article:modified_time" content="2020-05-08T15:33:22.252Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
@@ -286,7 +286,7 @@
         <p>上面介绍了<a href="https://blog.yzylcc.top/2020/01/18/volatile/" target="_blank" rel="noopener">Java内存模型</a>，对于我们接下来分析volatile关键字有了理论基础。</p>
 <a id="more"></a>
 
-<h2 id="volatile作用"><a href="#volatile作用" class="headerlink" title="volatile作用"></a>volatile作用</h2><p>关键字volatile可以说是Java虚拟机天宫的最轻量级的同步机制。volatile关键字可以使变量具有：</p>
+<h2 id="volatile作用"><a href="#volatile作用" class="headerlink" title="volatile作用"></a>volatile作用</h2><p>关键字volatile可以说是Java虚拟机提供的最轻量级的同步机制。volatile关键字可以使变量具有：</p>
 <ol>
 <li>保证此变量对所有线程<strong>可见性</strong>。这里的可见性是指当一条线程修改了这个变量的值 ，新值对于其他线程来讲是可以立即获知的。</li>
 <li><strong>禁止指令重排序优化</strong>，普通变量仅会保证该方法的执行过程中所有依赖赋值结果的地方能获取到正确的结果，不能保证变量赋值操作的顺序与程序代码中的执行顺序一致。</li>
@@ -313,7 +313,7 @@
 <li>初始化对象</li>
 <li>将内存空间的地址赋值给对应的引用。</li>
 </ol>
-<p>但是由于重拍学的原因，步骤2 3 可能会繁盛重排序，所以会导致singleton此时只是个半成品，还没有初始化，所以第二个if(instance == null ) 会失效，singleton仅仅是个地址而已。</p>
+<p>但是由于重排序的原因，步骤2 3 可能会发生重排序，所以会导致singleton此时只是个半成品，还没有初始化，所以第二个if(instance == null ) 会失效，singleton仅仅是个地址而已。</p>
 <p>所以用volatile修饰过后，步骤2 3则不会发生重排序，因此也就没有问题。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>所以总结，volatile主要能够保证可见性和有序性，但是对于原子性是无法保证的，我们只能通过JUC下的锁或者synchronized关键字来实现。</p>
 <blockquote>
