@@ -21,24 +21,23 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
+  <meta name="description" content="在Mysql上一个系列的事务篇中，提到了Mysql的日志。但是不够详细，加上最近面试问到过，对于其运行机制以及原理还是理解不够深入。这篇文章就来探讨一下这个。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java基础之CAS">
-<meta property="og:url" content="http://yoursite.com/2020/01/11/cas/index.html">
+<meta property="og:title" content="MySQL之日志及主从复制篇">
+<meta property="og:url" content="http://yoursite.com/2020/05/11/mysql-log/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/cas/image-20200430212433774.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/cas/image-20200430215459607.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/cas/image-20200430223919655.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/cas/012743C4.png">
-<meta property="article:published_time" content="2020-01-11T11:56:37.000Z">
-<meta property="article:modified_time" content="2020-04-30T15:05:11.054Z">
+<meta property="og:description" content="在Mysql上一个系列的事务篇中，提到了Mysql的日志。但是不够详细，加上最近面试问到过，对于其运行机制以及原理还是理解不够深入。这篇文章就来探讨一下这个。">
+<meta property="og:image" content="http://yoursite.com/2020/05/11/mysql-log/181121105137362.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/11/mysql-log/mysql_redo.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/11/mysql-log/v2-af3145acf63cedaf848da99b818c2874_720w.jpg">
+<meta property="article:published_time" content="2020-05-11T11:59:00.000Z">
+<meta property="article:modified_time" content="2020-05-11T14:32:45.979Z">
 <meta property="article:author" content="Lcc">
-<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Mysql">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/01/11/cas/image-20200430212433774.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/11/mysql-log/181121105137362.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/01/11/cas/">
+<link rel="canonical" href="http://yoursite.com/2020/05/11/mysql-log/">
 
 
 <script id="page-configurations">
@@ -51,7 +50,7 @@
   };
 </script>
 
-  <title>Java基础之CAS | Lcccc</title>
+  <title>MySQL之日志及主从复制篇 | Lcccc</title>
   
 
 
@@ -211,7 +210,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/11/cas/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/11/mysql-log/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -224,7 +223,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Java基础之CAS
+          MySQL之日志及主从复制篇
         </h1>
 
         <div class="post-meta">
@@ -234,7 +233,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-11 19:56:37" itemprop="dateCreated datePublished" datetime="2020-01-11T19:56:37+08:00">2020-01-11</time>
+              <time title="创建时间：2020-05-11 19:59:00" itemprop="dateCreated datePublished" datetime="2020-05-11T19:59:00+08:00">2020-05-11</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -242,7 +241,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
+                  <a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a>
                 </span>
             </span>
 
@@ -255,8 +254,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/01/11/cas/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/01/11/cas/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/05/11/mysql-log/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/11/mysql-log/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -285,63 +284,82 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。</p>
+        <p>在Mysql上一个系列的事务篇中，提到了Mysql的日志。但是不够详细，加上最近面试问到过，对于其运行机制以及原理还是理解不够深入。这篇文章就来探讨一下这个。</p>
 <a id="more"></a>
 
-<h2 id="什么是CAS"><a href="#什么是CAS" class="headerlink" title="什么是CAS"></a>什么是CAS</h2><p>CAS，全称是Compare and Swap。比较交换，在不使用锁的情况下实现多线程之间的变量同步。</p>
-<p>CAS算法涉及到三个值：</p>
+<h2 id="日志分类"><a href="#日志分类" class="headerlink" title="日志分类"></a>日志分类</h2><p>Mysql共有六种日志：重做日志（redo log）、回滚日志（undo log）、二进制日志（binlog）、错误日志（error log）、慢查询日志（slow query log）、一般查询日志（general log）、中继日志（relay log）。一般我们常用的日志有 redo log、undo log、binlog、slow query log。其中redo log是实现mysql事务持久性的保证，undo log是实现原子性的保证，binlog则是用在主从复制的时候，slow query log则是用来查询慢查询的利器。</p>
+<p>我们先来分析一下什么是<strong>物理日志</strong>，什么是<strong>逻辑日志</strong>。只有明白了这两个概念，才能更加的理解日志的实现原理。</p>
+<p><strong>物理日志</strong>：存储了数据被修改的值。</p>
+<p><strong>逻辑日志</strong>：存储的是逻辑SQL修改语句。</p>
+<p><img src="/2020/05/11/mysql-log/181121105137362.png" alt="MySQL的逻辑架构"></p>
+<h2 id="重做日志（redo-log）"><a href="#重做日志（redo-log）" class="headerlink" title="重做日志（redo log）"></a>重做日志（redo log）</h2><p>redo log是InnoDB存储引擎层的日志，叫做重做日志。用于记录事务操作的变化，<strong>记录的是物理日志，即数据修改之后的值</strong>。redo log本身由两部分构成：<strong>重做日志缓冲（redo log buffer）</strong>和<strong>重做日志文件（redo log file）</strong>。</p>
+<p>InnoD通过<strong>force log at commit</strong> 机制实现事务的持久性。即在事务提交的时候，必须先将事务的所有事务日志写入磁盘上的redo log file和 undo log file中进行持久化。</p>
+<p><strong>redo的工作过程：</strong></p>
+<p><img src="/2020/05/11/mysql-log/mysql_redo.png" alt="mysql_redo"></p>
 <ol>
-<li>内存地址</li>
-<li>预期值</li>
-<li>更新值</li>
+<li>将原始数据从磁盘中读入内存中来，修改数据的内存拷贝</li>
+<li>生成一条重做日志并写入到redo log buffer，记录的是数据被修改后的值</li>
+<li>当事务commit时，将redo log buffer中的内存刷新到redo log file，对redo log file 采用追加写的方式</li>
+<li>定期将内存中修改的数据刷新到磁盘中。</li>
 </ol>
-<p>只有当内存地址的值等于预期值时，才会用原子的方式把内存中的值修改为更新值。比较+更新是一个原子操作。</p>
-<h2 id="CAS原理"><a href="#CAS原理" class="headerlink" title="CAS原理"></a>CAS原理</h2><p><img src="/2020/01/11/cas/image-20200430212433774.png" alt></p>
-<p>我们以AtomicInteger为例，</p>
-<p><img src="/2020/01/11/cas/image-20200430215459607.png" alt></p>
-<p>可以看到主要有:</p>
+<h2 id="二进制日志（binlog）"><a href="#二进制日志（binlog）" class="headerlink" title="二进制日志（binlog）"></a>二进制日志（binlog）</h2><p>binlog属于Mysql Server层面的。binlog是<strong>逻辑格式的日志</strong>，则主要记录的是update/delete/insert这样实际执行的SQL语句。</p>
+<p>它的作用主要是用在<strong>复制</strong>，在主从复制中，从库利用主库上的binlog进行重播。同时，可以用于数据库基于某个时间点的<strong>还原</strong>。</p>
+<p>redo log和binlog都可以用于还原数据，但是场景不太一样。redo log因为是<strong>循环写</strong>的，当对应事务的数据写入到数据库中，redo log就失去了作用，所有redo log不会存储历史所有数据的变更，文件的内容会被覆盖。</p>
+<p>那么redo log 和 binlog的写入顺序是什么？</p>
+<p><strong>Mysql通过两阶段提交来实现redo log和binlog的数据一致。</strong></p>
+<p><img src="/2020/05/11/mysql-log/v2-af3145acf63cedaf848da99b818c2874_720w.jpg" alt="img"></p>
+<p>通过上图可以知道：</p>
 <ol>
-<li>unsafe : 获取并操作内存的数据</li>
-<li>valueOffset ：内存中的偏移量</li>
-<li>value : volatile修饰的int值，从而保证其在线程间的可见性。</li>
+<li>InnoDB  redolog写盘，InnoDB事务进入 prepare状态。</li>
+<li>binlog写盘，InnoDB事务进入commit状态。</li>
 </ol>
-<p>观察其<strong><em>incrementAndGet</em></strong>方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.getAndAddInt(<span class="keyword">this</span>, valueOffset, <span class="number">1</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里使用到<strong>Unsafe类</strong>。Unsafe类是CAS的核心类，AtomicInteger类就是靠Unsafe完成CAS操作。</p>
-<p>我们知道 在Java中，我们是无法直接访问到操作系统的，只能通过本地方法来访问。本地方法不是使用Java实现的，是由C/C++语言在另外的文件中编写，遵循Java本地接口的规范（简称JNI）。但是Java提供Unsafe类可以实现硬件级别的原子操作。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//sun.misc.Unsafe#getAndAddInt</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object var1, <span class="keyword">long</span> var2, <span class="keyword">int</span> var4)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> var5;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        var5 = <span class="keyword">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">    &#125; <span class="keyword">while</span>(!<span class="keyword">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//// ------------------------- OpenJDK 8 -------------------------</span></span><br><span class="line"><span class="comment">// Unsafe.java</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object o, <span class="keyword">long</span> offset, <span class="keyword">int</span> delta)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">int</span> v;</span><br><span class="line">   <span class="keyword">do</span> &#123;</span><br><span class="line">       v = getIntVolatile(o, offset);</span><br><span class="line">   &#125; <span class="keyword">while</span> (!compareAndSwapInt(o, offset, v, v + delta));</span><br><span class="line">   <span class="keyword">return</span> v;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过OpenJDK 8的源码我们可以看出，不断取出对象o在内存偏移量offset处的值，判断内存中的值是否等于v，如果等于则把内存中的值设置为 v + delta，否则返回false，循环继续执行，直到设置成功后退出并返回旧值。整个比较+更新的操作封装在<strong><em>compareAndSwapInt</em></strong>中，在JNI中，是通过一个cpu指令完成的，属于原子操作，所以可以保证多个线程能够看到同一个变量的修改值。</p>
-<p>通过查看Hotspot源码，在Unsafe.cpp类中最终是调用了 <strong><em>Atomic::cmpxchg</em></strong>方法。<strong><em>Atomic::cmpxchg</em></strong>在不同平台上有不同的实现 （这里就涉及到知识盲区），总之<strong>JDK通过CPU的cmpxchgl指令的支持，实现AtomicInteger的CAS操作的原子性</strong>。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSwapInt(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jint e, jint x))</span><br><span class="line">  UnsafeWrapper(<span class="string">"Unsafe_CompareAndSwapInt"</span>);</span><br><span class="line">  oop p = JNIHandles::resolve(obj);</span><br><span class="line">  jint* addr = (jint *) index_oop_from_field_offset_long(p, offset);</span><br><span class="line">  <span class="keyword">return</span> (jint)(Atomic::cmpxchg(x, addr, e)) == e;</span><br><span class="line">UNSAFE_END</span><br></pre></td></tr></table></figure>
-
-<h3 id="CAS的问题"><a href="#CAS的问题" class="headerlink" title="CAS的问题"></a>CAS的问题</h3><p>CAS虽好，但是也存在着一些问题，例如：</p>
+<p>这里可以扩展一下Mysql是如果通过binlog来实现<strong>主从复制</strong>的：</p>
 <ol>
-<li>循环时间不确定，有可能太长。如果while循环一直不能退出，那么就会给cpu带来很大开销。JUC中有些地方就限制了CAS自旋的次数，例如阻塞队列中的SynchronousQueue，如果cpu数量大于等于2则默认32*16次，否则为0。</li>
-</ol>
-<p><img src="/2020/01/11/cas/image-20200430223919655.png" alt="SynchronousQueue"></p>
-<ol start="2">
-<li>只能保证一个共享变量原子操作。对一个共享变量操作时，cas能保证原子操作，但对多个共享变量操作时，cas是无法保证操作的原子性的。但是JDK1.5之后提供了<strong>AtomicReference</strong>类来保证引用对象之间的原子性，可以把多个变量放在一个对象里面进行CAS操作。</li>
-<li>ABA问题。通俗就是将内存的值是A，后来变成了B，然后又变成了A，cas检查发现没有变化，实际上是有变化的。解决办法就是添加版本号，JDK1.5之后提供AtomicStampedReference类来解决ABA问题，通过标记stamp来代表版本号。</li>
-</ol>
-<h2 id="Unsafe类"><a href="#Unsafe类" class="headerlink" title="Unsafe类"></a>Unsafe类</h2><p>Unsafe类是位于sun.misc包下的类，主要用于执行一些不安全的操作，例如直接访问操作系统资源。</p>
-<p>我们一般开发不会用到，JDK1.9之前可以通过反射来获取单例对象。</p>
-<p>主要功能：</p>
+<li><p><strong>主从复制的方式</strong></p>
 <ol>
-<li>进行内存分配、拷贝等操作。例如：堆外内存DirectByteBuffer，在通信中用做缓冲池，在Netty等NIO框架中广泛使用。</li>
-<li>CAS相关操作。例如我们上面所说的原子类。</li>
-<li>线程调度。例如JUC中锁使用中线程的阻塞唤醒就是通过LockSupport实现的。LockSupport实际上是通过调用Unsafe的park、unpark方式来实现的。</li>
-<li>Class相关。</li>
+<li><strong>基于语句的复制</strong>，也成为逻辑复制。即主库记录造成数据更改的查询，当备库读取并重放这些事件时，实际上只是把主库上执行过的SQL再执行一遍。</li>
+<li><strong>基于行的复制</strong>。这种方式是将实际数据记录在binlog中。</li>
 </ol>
-<p>等等……..</p>
-<p>就不过多涉及了，因为这个类一般我们也用不到，已经超出我的理解能力了~<img src="/2020/01/11/cas/012743C4.png" alt></p>
+<p>MySQL会在这两种复制方式间动态切换，默认情况下使用基于语句的复制方式，如果发现语句无法被正确的复制，那么切换到基于行的复制模式下。</p>
+</li>
+<li><p><strong>主从复制原理</strong></p>
+<p>MySQL主从复制涉及到三个线程：一个运行在主节点的<strong>log dump thread</strong>，其余两个<strong>I/O thread</strong>、<strong>SQL thread</strong> 运行在从节点。</p>
+<ol>
+<li>当从节点连接到主节点时，主节点会创建一个log dump 线程，用于发送binlog，在读取binlog中的操作时，此线程会对主节点的binlog加锁，在读取完成发送给从节点之前，释放锁。</li>
+<li>从节点会创建一个I/O线程来连接主节点，当I/O线程接收到主节点的binlog之后，会保存在本地的relaylog。</li>
+<li>当从节点的SQL线程检测到relay log新增内容后，会将relay log的内容解析为实际执行的操作，在从库上执行。</li>
+</ol>
+</li>
+<li><p><strong>主从复制模式</strong></p>
+<ol>
+<li><strong>异步模式</strong> 。Mysql主从复制默认的是异步模式。这种模式下，主节点不会主动push binlog到从节点，只只会在事务写入binlog后，通知dump 线程发送这些新的数据，然后继续处理提交操作，不保证这些binlog传到任何一个从库节点。</li>
+<li><strong>全同步模式</strong>。当主库执行完一个事务，所有从库都执行完该事务才返回给客户端。</li>
+<li><strong>半同步模式</strong>。主库在执行完客户端提交的事务后，不是立刻返回给客户端，而是等待至少一个从库接收并写到relay log中才返回给客户端。</li>
+</ol>
+</li>
+<li><p><strong>主从复制延迟</strong></p>
+<ol>
+<li>产生延迟的原因：主节点如果执行一个很大的事务，那么就会对主从延迟产生较大的影响；网络延迟，slave数量较多；主节点多线程写入，丛节点只有单线程恢复。</li>
+<li>解决办法：将大事务拆分为事务；减少从节点数量；对延迟要求较高的强制都走主节点。</li>
+</ol>
+</li>
+</ol>
+<h2 id="回滚日志（undo-log）"><a href="#回滚日志（undo-log）" class="headerlink" title="回滚日志（undo log）"></a>回滚日志（undo log）</h2><p>undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要将之前的操作都记录下来，然后在发生错误时才可以回滚。</p>
+<p>undo log主要存储的是<strong>逻辑日志</strong>，比如，一条insert语句，那么undo log会记录一条对应的delete日志；一个update语句，那么则记录着一条相反的update记录。</p>
+<p>undo log主要有两个作用：</p>
+<ol>
+<li><strong>回滚</strong>。当某些原因的时候事务失败，需要回滚，那么就可以利用undo log进行回滚。</li>
+<li><strong>多版本控制（mvcc）</strong>。因为undo log记录着修改之前的数据，mvcc实现的是读写不阻塞，那么读的时候只需要返回前一个版本数据即可。</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>当面试官问我知道mysql中的日志吗？</p>
+<p>我回答知道。但是也仅仅说出了这三个日志的作用。当他问我那你知道这日志里面的记录的是什么的时候？我有点懵逼，哈？都问到了实现结构了嘛？现在回想起来，才发现，面试官可能想问的是：<strong>redo log里面记录的是修改后的记录，是物理日志，而undo log里面的则是相反的sql语句，是逻辑日志</strong>。只怪我当时脑子抽了~谨记谨记。</p>
 <blockquote>
-<p>参考列表</p>
+<p>参考</p>
 <ol>
-<li><a href="https://tech.meituan.com/2018/11/15/java-lock.html" target="_blank" rel="noopener">https://tech.meituan.com/2018/11/15/java-lock.html</a></li>
-<li><a href="https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html" target="_blank" rel="noopener">https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html</a></li>
-<li><a href="https://juejin.im/post/5a73cbbff265da4e807783f5" target="_blank" rel="noopener">https://juejin.im/post/5a73cbbff265da4e807783f5</a></li>
+<li><a href="https://pjmike.github.io/2019/01/14/%E6%B5%85%E6%9E%90MySQL%E4%BA%8B%E5%8A%A1%E4%B8%AD%E7%9A%84redo%E4%B8%8Eundo/" target="_blank" rel="noopener">https://pjmike.github.io/2019/01/14/%E6%B5%85%E6%9E%90MySQL%E4%BA%8B%E5%8A%A1%E4%B8%AD%E7%9A%84redo%E4%B8%8Eundo/</a></li>
+<li><a href="https://www.linuxidc.com/Linux/2018-11/155431.htm" target="_blank" rel="noopener">https://www.linuxidc.com/Linux/2018-11/155431.htm</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/112106862" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/112106862</a></li>
+<li><a href="https://juejin.im/post/5ca2a176f265da30ba5b0b91" target="_blank" rel="noopener">https://juejin.im/post/5ca2a176f265da30ba5b0b91</a></li>
 </ol>
 </blockquote>
 
@@ -353,7 +371,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Mysql/" rel="tag"># Mysql</a>
           </div>
 
         
@@ -362,13 +380,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/04/synchronized/" rel="prev" title="搞懂Java多线程系列之Synchronized">
-      <i class="fa fa-chevron-left"></i> 搞懂Java多线程系列之Synchronized
+    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
+      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/01/18/volatile/" rel="next" title="深入JVM之Java线程模型">
-      深入JVM之Java线程模型 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -428,7 +443,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是CAS"><span class="nav-number">1.</span> <span class="nav-text">什么是CAS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAS原理"><span class="nav-number">2.</span> <span class="nav-text">CAS原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAS的问题"><span class="nav-number">2.1.</span> <span class="nav-text">CAS的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Unsafe类"><span class="nav-number">3.</span> <span class="nav-text">Unsafe类</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#日志分类"><span class="nav-number">1.</span> <span class="nav-text">日志分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重做日志（redo-log）"><span class="nav-number">2.</span> <span class="nav-text">重做日志（redo log）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二进制日志（binlog）"><span class="nav-number">3.</span> <span class="nav-text">二进制日志（binlog）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#回滚日志（undo-log）"><span class="nav-number">4.</span> <span class="nav-text">回滚日志（undo log）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

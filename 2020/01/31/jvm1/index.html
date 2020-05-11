@@ -33,7 +33,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501175338302.png">
 <meta property="og:image" content="http://yoursite.com/2020/01/31/jvm1/image-20200501175228964.png">
 <meta property="article:published_time" content="2020-01-31T06:23:22.000Z">
-<meta property="article:modified_time" content="2020-05-01T11:21:30.742Z">
+<meta property="article:modified_time" content="2020-05-09T00:11:57.772Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
@@ -290,7 +290,7 @@
 <p>go fight!!! <img src="/2020/01/31/jvm1/00F2E65F.png" alt></p>
 <a id="more"></a>
 
-<h2 id="JVM怎么判断哪些对象应该回收？"><a href="#JVM怎么判断哪些对象应该回收？" class="headerlink" title="JVM怎么判断哪些对象应该回收？"></a>JVM怎么判断哪些对象应该回收？</h2><h3 id="引用计数法"><a href="#引用计数法" class="headerlink" title="引用计数法"></a>引用计数法</h3><p>。在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为0时，代表对象不再使用。但是引用计数器最大的问题是，不能解决<strong>循环依赖</strong>的问题。</p>
+<h2 id="JVM怎么判断哪些对象应该回收？"><a href="#JVM怎么判断哪些对象应该回收？" class="headerlink" title="JVM怎么判断哪些对象应该回收？"></a>JVM怎么判断哪些对象应该回收？</h2><h3 id="引用计数法"><a href="#引用计数法" class="headerlink" title="引用计数法"></a>引用计数法</h3><p>在对象中添加一个引用计数器，每当一个地方引用它时，计数器加1；当引用失效时，计数器值减1；当计数器为0时，代表对象不再使用。但是引用计数器最大的问题是，不能解决<strong>循环依赖</strong>的问题。</p>
 <p><img src="/2020/01/31/jvm1/image-20200501152633887.png" alt></p>
 <p>这里A B都可以被回收，但是因为互相引用，导致他们各自计数器为1，不能被回收。</p>
 <h3 id="可达性分析算法"><a href="#可达性分析算法" class="headerlink" title="可达性分析算法"></a>可达性分析算法</h3><p>通过一系列称为’GC Roots‘ 的根对象作为起始节点集，从根节点开始，根据引用关系向下搜索，搜索过程所走过的路称为引用链，如果某个对象到GC Roots间没有任何引用链相连，则证明此对象是不可能被使用的。</p>
@@ -455,7 +455,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">42</span>
+          <span class="site-state-item-count">43</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -504,12 +504,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">280k</span>
+    <span title="站点总字数">282k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">4:14</span>
+    <span title="站点阅读时长">4:17</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
