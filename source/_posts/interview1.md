@@ -76,6 +76,22 @@ Google的Guava包中的RateLimiter类就是令牌桶算法的解决方案。
 
 我们可以将需要传递的数据放在JVM内存的一个map里面，key为线程ID，value为需要传递的值；或者将这个map放到redis等公共空间都可以。
 
+#### 如何避免MySQL死锁？
+
+1. 对索引加锁顺序不一致可能会导致死锁，如果可以，尽量以相同顺序来防伪索引记录和表。
+2. Gap锁有可能对导致死锁，Mysql的隔离界别是RR，使用行锁+Gap锁来解决幻读问题，如果幻读问题影响不大，那么可以考虑将隔离级别更改为RC。
+3. 为表增加合适的索引，因为不走索引的情况，会对表加锁，死锁概率提高。
+4. MyISAM只支持表锁，采用一次封锁技术来保证事务之间不会发送死锁。我们也可以采用同样的思想，在事务中一次锁定所需要的全部资源，减少死锁概率。
+5. 将大事务拆分为小事务。
+6. 避免同一时间运行多个对同一表进行读写的脚本。定时任务等
+7. 设置锁等待超时参数innodb_lock_wait_timeout。
+
+
+> 参考列表
+> 
+> 1. https://www.aneasystone.com/archives/2018/04/solving-dead-locks-four.html
+> 2. https://www.jianshu.com/p/a59c13e70582
+> 3. https://www.zhihu.com/question/54895548
 待续~~~
 
 
