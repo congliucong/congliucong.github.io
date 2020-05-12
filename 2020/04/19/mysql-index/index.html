@@ -31,7 +31,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/04/19/mysql-index/10.png">
 <meta property="og:image" content="http://yoursite.com/2020/04/19/mysql-index/11.png">
 <meta property="article:published_time" content="2020-04-19T15:42:21.000Z">
-<meta property="article:modified_time" content="2020-05-08T12:08:14.960Z">
+<meta property="article:modified_time" content="2020-05-12T11:38:19.187Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Mysql">
 <meta name="twitter:card" content="summary">
@@ -300,20 +300,20 @@
 <p>那么B-Tree和B+Tree树有什么区别呢？</p>
 <ol>
 <li>B-Tree每个节点即保存索引，又保存数据。B+Tree的关键字非叶子节点存储的是索引，而非数据，只有叶子节点存放诗句。</li>
-<li>B+Tree的叶子节点之间构成链表，遍历叶子节点就能获取全部数据。</li>
+<li>B+Tree的叶子节点之间构成链表，遍历叶子节点就能获取全部数据。因此可以用于范围查询。</li>
 </ol>
 <p>因此，B+树可以使得树高更矮，从而降低磁盘IO次数，提高查询速度。所以在InnoDB引擎中，索引的数据结构默认是B+树。</p>
 <h4 id="局部性原理与磁盘预读"><a href="#局部性原理与磁盘预读" class="headerlink" title="局部性原理与磁盘预读"></a>局部性原理与磁盘预读</h4><p>局部性原理和磁盘预读我们在volatile分析时 缓存行那里介绍 过。大概意思是：当一个数据被用到时，其附近的数据也通常会被马上使用到，所以一般会预读长度为一页的整数倍。页是计算机存储的逻辑块，硬件和操作系统通常将主存和磁盘存储块分割为连续大小相等的块，每个存储块称为一页，主存和磁盘以页为单位交换数据。</p>
 <h4 id="B-Tree索引性能分析"><a href="#B-Tree索引性能分析" class="headerlink" title="B+Tree索引性能分析"></a>B+Tree索引性能分析</h4><p>所以有了局部性原理和磁盘预读，mysql利用这个原理，<strong>将一个节点的大小设置为一页，这样每个节点只需要一次IO就可以完全载入</strong>。因为B+树非叶子节点存储的是索引，而非数据，因此每个节点可以存储更多的索引，这样就能整体降低B+树的高度，从而减少磁盘IO次数。这也就是为什么我们要求索引字段尽量小，都是为了在每一个节点尽量存储更多的数据，而降低树高。</p>
 <h3 id="Mysql索引实现"><a href="#Mysql索引实现" class="headerlink" title="Mysql索引实现"></a>Mysql索引实现</h3><p>在Mysql中，索引属于存储引擎级别的概念，不同存储引擎对索引的实现是不同的。这里从MyISAM和InnoDB两个存储引擎的索引说起。</p>
 <h4 id="MyISAM存储引擎"><a href="#MyISAM存储引擎" class="headerlink" title="MyISAM存储引擎"></a>MyISAM存储引擎</h4><p>MyISAM引擎使用B+数作为索引结构，叶节点的data域存放的是数据记录的地址。</p>
-<p><img src="/2020/04/19/mysql-index/9.png" alt="https://blog.codinglabs.org/articles/theory-of-mysql-index.html"></p>
+<p><img src="/2020/04/19/mysql-index/9.png" alt></p>
 <p>如上图所示，MyISAM的索引文件仅仅保存数据记录的地址。所以,MyISAM的索引文件和数据文件是分开的。在MyISAM中，主索引和辅助索引在结构上是没有区别的。</p>
 <p>MyISAM的索引方式叫做”非聚集”的，这样称呼是与InnoDB的聚集索引区分开来。</p>
 <h4 id="InnoDB存储引擎"><a href="#InnoDB存储引擎" class="headerlink" title="InnoDB存储引擎"></a>InnoDB存储引擎</h4><p>InnoDB也是使用B+树作为索引结构的，但是实现上面跟MyISAN不一样。</p>
-<p>InnoDB中，索引文件和数据文件是同一份文件。表数据文件本身就是按照B+树组织的一个索引结构，这颗树的叶子节点data域保存了完整的数据记录。这个索引的key是数据表的主键，因此InnoDB表数据文件本身就是主索引。<br><img src="/2020/04/19/mysql-index/10.png" alt="https://blog.codinglabs.org/articles/theory-of-mysql-index.html"></p>
+<p>InnoDB中，索引文件和数据文件是同一份文件。表数据文件本身就是按照B+树组织的一个索引结构，这颗树的叶子节点data域保存了完整的数据记录。这个索引的key是数据表的主键，因此InnoDB表数据文件本身就是主索引。<br><img src="/2020/04/19/mysql-index/10.png" alt></p>
 <p>可以看出来InnoDB主索引的示意图，可以看出叶节点包含了完整数据，这种索引叫做聚集索引。InnoDB数据文件本身要按照主键聚集，所以InnoDB要求表必须要有主键，如果没有显示指定，那么Mysql会自动选择一个可以唯一表示你数据的列作为主键，如果不存在这样的列，那么InnoDB会自动生成一个隐含字段作为主键。</p>
-<p>InnoDB的二级索引，叶子节点data域记录的是相应记录的主键值而非数据。<br><img src="/2020/04/19/mysql-index/11.png" alt="https://blog.codinglabs.org/articles/theory-of-mysql-index.html"></p>
+<p>InnoDB的二级索引，叶子节点data域记录的是相应记录的主键值而非数据。<br><img src="/2020/04/19/mysql-index/11.png" alt></p>
 <p>所以，通过二级索引查询记录，要通过二级索引B+树查询到主键值，再通过主键聚集索引定位到行记录，一共需要两遍查询，这个就是叫做 <strong>回表查询</strong>。</p>
 <p>所以，我们要求索引字段尽量小原因一是，主键聚集索引每个节点可以容纳更多的索引值，降低树高，又因为二级索引的叶子节点记录的是主键，主键过长也会导致二级索引的树高变高，从而影响查询效率。</p>
 <h3 id="索引使用策略及优化"><a href="#索引使用策略及优化" class="headerlink" title="索引使用策略及优化"></a>索引使用策略及优化</h3><h4 id="索引覆盖"><a href="#索引覆盖" class="headerlink" title="索引覆盖"></a>索引覆盖</h4><p>索引覆盖指的是一个查询语句的执行，只需要从索引中就可以获取到，不必从数据表中值读取，就叫做索引覆盖。</p>
@@ -324,7 +324,7 @@
 </ol>
 <h4 id="索引下推"><a href="#索引下推" class="headerlink" title="索引下推"></a>索引下推</h4><p>索引下推是Mysql5.7推出的一项优化策略。<strong>索引下推只作用于二级缓存</strong>。意思是：在没有索引下推的情况下进行查询，存储引擎通过索引检索到数据，然后返回给Mysql服务器，服务器然后判断数据是否符合条件；在使用索引下推之后，判断条件直接会在存储引擎完成判断，将符合条件的返回，这样就能有效减少回表次数，大大提升查询效率。</p>
 <h4 id="正确使用索引"><a href="#正确使用索引" class="headerlink" title="正确使用索引"></a>正确使用索引</h4><ol>
-<li><p>最左前缀匹配<br>在Mysql建立联合索引时会遵循最左前缀匹配原则，即最左优先，在检索数据时，从联合索引的最左边开始匹配。所以当创建联合索引时，如（k1,k2,k3），相当于创建了（k1）（k1,k2）（k1,k2,k3）三个索引。因此，如果查询条件是k3，则使用不到索引，如果查询条件是k1，k2，那么只能用到k1索引。</p>
+<li><p>最左前缀匹配<br>在Mysql建立联合索引时会遵循最左前缀匹配原则，即最左优先，在检索数据时，从联合索引的最左边开始匹配。所以当创建联合索引时，如（k1,k2,k3），相当于创建了（k1）（k1,k2）（k1,k2,k3）三个索引。因此，如果查询条件是k3，则使用不到索引，如果查询条件是k1，k3，那么只能用到k1索引。</p>
 </li>
 <li><p>全列匹配<br>索引中所有列都精确匹配，索引都可以被用到。理论上索引对顺序是敏感的，但是Mysql查询优化器会自动调整where子句的条件顺序来使用合适的索引。</p>
 </li>
@@ -339,7 +339,7 @@
 <h3 id="Mysql性能分析及优化"><a href="#Mysql性能分析及优化" class="headerlink" title="Mysql性能分析及优化"></a>Mysql性能分析及优化</h3><ol>
 <li>查看Mysql服务器运行的状态值</li>
 </ol>
-<p><strong>show status</strong>: 一般关注 Queries、Threadsconnected、Threadsrunning的值，及查询次数、线程连接数。线程运行数，观察是由于访问量高导致数据库速度变慢还是其他原因。如果系统的并发请求并不高，且查询速度慢，那么可以直接记性SQL语句调优步骤。</p>
+<p><strong>show status</strong>: 一般关注 Queries、Threadsconnected、Threadsrunning的值，即查询次数、线程连接数。线程运行数，观察是由于访问量高导致数据库速度变慢还是其他原因。如果系统的并发请求并不高，且查询速度慢，那么可以直接进行SQL语句调优步骤。</p>
 <ol start="2">
 <li><p>获取需要优化的SQL语句</p>
 <ol>
@@ -363,7 +363,7 @@
 <p>system：表只有一行记录，相当于系统表<br>const：通过索引一次就找到，只匹配一行数据<br>eq_ref：唯一性索引扫描，对于每个索引键，表中只有一条记录与之匹配。常用于主键或唯一索引扫描<br>ref：非唯一性索引扫描，返回匹配某个单独值的所有行。用于=、&lt; 或 &gt; 操作符带索引的列<br>range：只检索给定范围的行，使用一个索引来选择行。一般使用between、&gt;、&lt;情况<br>index：只遍历索引树<br>ALL：全表扫描，性能最差</p>
 <p><strong>key</strong> ： 显示MySQL实际使用的索引，如果为null，说明没有使用索引查询。</p>
 <p><strong>rows</strong> : 大致估算出找到所需记录需要扫描的行，数值越小越好。</p>
-<p><strong>extra</strong> : 其他信息，<br>当出现 using filesort说明Mysql对数据使用一个外部的索引排序，而不是按照表内的索引顺序进行读取。<br>当出现 using temporary 说明使用了临时表保存中间结果。Mysql在对查询结果排序时使用临时表，常见于排序Order by 和 分组查询 group by。<br>当出现这两种情况的时候，就应该去优化sql。</p>
+<p><strong>extra</strong> : 其他信息，<br>当出现 <strong>using filesort</strong>说明Mysql对数据使用一个外部的索引排序，而不是按照表内的索引顺序进行读取。<br>当出现 <strong>using temporary</strong> 说明使用了临时表保存中间结果。Mysql在对查询结果排序时使用临时表，常见于排序Order by 和 分组查询 group by。<br>当出现这两种情况的时候，就应该去优化sql。</p>
 <ol start="4">
 <li><p>优化SQL语句</p>
 <ol>
@@ -371,7 +371,7 @@
 </li>
 <li><p>小表驱动大表。当使用in时，先执行in中的子查询，然后执行外面的主查询；当使用exits时，先执行主查询，然后子查询作为内层循环。因此有A B两表，通过id字段关联。当A表数据大于B表时，应该使用 select * from A where id in (select id from B)；当A表数据小于B表时，应该使用select *  from A where exists(select 1 from B where B.id = A.id)。总之要保证小表驱动大表。</p>
 </li>
-<li><p>一般情况下，使用连接代替子查询，因为使用join,Mysql不会在内存中创建临时表。</p>
+<li><p>一般情况下，使用连接代替子查询，因为使用join，Mysql不会在内存中创建临时表。</p>
 </li>
 <li><p>适当冗余字段，减少表关联</p>
 </li>
@@ -487,18 +487,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-count">44</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
-        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -536,12 +536,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">282k</span>
+    <span title="站点总字数">284k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">4:17</span>
+    <span title="站点阅读时长">4:19</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>

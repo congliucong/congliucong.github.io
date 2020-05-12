@@ -21,22 +21,19 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。">
+  <meta name="description" content="上午完成了陆金所的面试，总体来说感受还行，当然中间过程也被打击了，还是有很多知识点没有涉及到，下面来做个总结。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis知识归纳(八)Redis事务">
-<meta property="og:url" content="http://yoursite.com/2020/04/06/redis8/index.html">
+<meta property="og:title" content="陆金所、平安金服面试总结">
+<meta property="og:url" content="http://yoursite.com/2020/05/09/interview1/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。">
-<meta property="og:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212947691.png">
-<meta property="og:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212821417.png">
-<meta property="article:published_time" content="2020-04-06T13:05:35.000Z">
-<meta property="article:modified_time" content="2020-05-06T13:37:08.106Z">
+<meta property="og:description" content="上午完成了陆金所的面试，总体来说感受还行，当然中间过程也被打击了，还是有很多知识点没有涉及到，下面来做个总结。">
+<meta property="article:published_time" content="2020-05-09T06:10:11.000Z">
+<meta property="article:modified_time" content="2020-05-12T11:38:19.184Z">
 <meta property="article:author" content="Lcc">
-<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="面试">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/04/06/redis8/image-20200506212947691.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/04/06/redis8/">
+<link rel="canonical" href="http://yoursite.com/2020/05/09/interview1/">
 
 
 <script id="page-configurations">
@@ -49,7 +46,7 @@
   };
 </script>
 
-  <title>Redis知识归纳(八)Redis事务 | Lcccc</title>
+  <title>陆金所、平安金服面试总结 | Lcccc</title>
   
 
 
@@ -209,7 +206,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/06/redis8/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/09/interview1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -222,7 +219,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Redis知识归纳(八)Redis事务
+          陆金所、平安金服面试总结
         </h1>
 
         <div class="post-meta">
@@ -232,7 +229,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-04-06 21:05:35" itemprop="dateCreated datePublished" datetime="2020-04-06T21:05:35+08:00">2020-04-06</time>
+              <time title="创建时间：2020-05-09 14:10:11" itemprop="dateCreated datePublished" datetime="2020-05-09T14:10:11+08:00">2020-05-09</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -240,7 +237,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
                 </span>
             </span>
 
@@ -253,8 +250,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/04/06/redis8/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/06/redis8/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/05/09/interview1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/09/interview1/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -264,14 +261,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>757</span>
+              <span>2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -283,33 +280,70 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>Redis也是有事务的。MULTI，EXEC、DISCARD 和WATCH 是Redis事务相关的命令。</p>
+        <p>上午完成了陆金所的面试，总体来说感受还行，当然中间过程也被打击了，还是有很多知识点没有涉及到，下面来做个总结。</p>
 <a id="more"></a>
 
-<p>事务可以一次性执行多个命令，并且带有一下两个重要的保证：</p>
+<h4 id="Http与Https有什么区别？"><a href="#Http与Https有什么区别？" class="headerlink" title="Http与Https有什么区别？"></a>Http与Https有什么区别？</h4><p>首先 HTTP协议有三个版本：</p>
 <ol>
-<li>事务是一个单独的隔离操作：事务中的所有命令都会序列化、按顺序的执行。事务在执行期间，不会被其他客户端发送来的命令打断。</li>
-<li>事务是一个原子操作。</li>
+<li>HTTP1.0</li>
+<li>HTTP1.1</li>
+<li>HTTP/2</li>
 </ol>
-<h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><p>MULTI 命令用于开启一个事务，当MULTI执行之后，客户端可以继续向服务器发送任意多条指令，这些指令不会被立即执行，而是放在一个队列中，当EXEC命令执行的时候，所有队列中的命令才会被执行。</p>
-<p>如果调用DISCARD，客户端可以清空事务队列，并放弃执行事务。</p>
-<p>但是需要注意的是：</p>
+<p>HTTP1.0 和 HTTP1.1最主要的区别是：<br>HTTP1.1默认是 <strong>持久化连接</strong>，而HTTP1.0则是短链接。简单的说，就是每次与服务器交互，都需要新开一个连接。</p>
+<p>因此如果每个请求都建立一个连接，HTTP协议是基于TCP协议的，TCP每次都需要经过三次握手，四次挥手，慢启动等，这个过程是非常消耗资源的。</p>
+<p>而HTTP1.1默认使用了持久化连接来解决：建立一次连接，多次请求均由这个连接来完成。</p>
+<p>HTTP2与HTTP1.1的区别在于：HTTP2解决了线头阻塞的问题，最重要的的改动是：多路复用。多路复用意味着线头阻塞将不再是个问题，允许通过单一的HTTP2连接发起多重的请求-响应消息。</p>
+<p>所以回到HTTPS，HTTPS其实就是在HTTP协议下多加了一层SSL协议。HHTP协议以明文方式发送内存，不提供任何方式的数据加密。而HTTPS采用的是混合方式加密。<br>工作流程是：</p>
 <ol>
-<li>如果事务队列中存在命令性错误，类似java编译性错误，那么执行exec时，所有命令都不执行。</li>
+<li>客户端发起HTTPS请求，连接到服务端的443端口。</li>
+<li>采用HTTPS协议的服务器会有一套数字证书，服务端会将这个证书发给客户端</li>
+<li>客户端的TLS会对证书进行解析，如果证书没有问题则会生成一个随机值，随后用证书对随机值进行加密，并且将这个证书加密后的随机值发送给服务端。</li>
+<li>服务端用私钥解密后，等到了客户端传送的随机值。此时一个非对称加密过程结束，可以看出TLS利用非对称加密实现身份认证和密钥协商。随后将通信内容通过随机值进行对称加密，发送给客户端。</li>
+<li>客户端收到内容后，用随机值进行解密。此时一个对称加密的过程结束。</li>
 </ol>
-<p><img src="/2020/04/06/redis8/image-20200506212947691.png" alt></p>
-<ol start="2">
-<li>事务队列中存在语法错误错误，类似java中的1/0的运行时异常，那么执行exec后，其余正确的命令会被执行，错误命令抛出异常。</li>
+<h4 id="如何设计一个秒杀系统？"><a href="#如何设计一个秒杀系统？" class="headerlink" title="如何设计一个秒杀系统？"></a>如何设计一个秒杀系统？</h4><ol>
+<li>秒杀系统独立部署、数据库分库，独立部署秒杀数据库</li>
+<li>秒杀连接加密，把秒杀URL动态化加密</li>
+<li>Redis集群部署</li>
+<li>Nginx负载均衡，在秒杀期间部署多台机器</li>
+<li>前端资源静态化，按钮置灰等</li>
+<li>库存预热：提前把商品库存加载到Redis中，扣减库存时先操作redis，等秒杀结束后再去修改数据库库存。</li>
+<li>秒杀开始后限流&amp;降级&amp;熔断&amp;隔离：前端限流，页面点击次数限制；后端限流：Sentinel、Hystrix</li>
+<li>Redis库存扣减时使用Lua脚本。Lua脚本将多条命令一起执行，具有原子性。</li>
+<li>如果是多个商品，那么可以使用MQ进行削峰填谷，队列串行修改库存。</li>
 </ol>
-<p><img src="/2020/04/06/redis8/image-20200506212821417.png" alt></p>
-<h3 id="为什么Redis不支持回滚"><a href="#为什么Redis不支持回滚" class="headerlink" title="为什么Redis不支持回滚"></a>为什么Redis不支持回滚</h3><ol>
-<li>Redis命令只会因为错误的语法而失败或者命令用在了错误类型的键上，这也就是说，从实用性的角度来说，失败的命令是由编程错误造成的，这些错误应该再开发的过程中被发现，而不应该出现在生产环境中。</li>
-<li>因为不需要对回滚进行支持，所以Redis内部可以保持简单且快速。</li>
+<p><strong>令牌桶算法</strong></p>
+<p>令牌桶算法用来控制发送到网络上的数据的数目，并允许突发数据的发送。</p>
+<p>原理是:系统会以一个恒定的速度往桶里面放入令牌，如果请求需要被处理，则需要先从桶里获取一个令牌，当桶里没有令牌可取时，则拒绝服务。</p>
+<p>Google的Guava包中的RateLimiter类就是令牌桶算法的解决方案。</p>
+<p><strong>漏桶算法</strong></p>
+<p>漏桶算法则是请求先进入漏桶，漏桶以一定速度出水，当水流速度过大时会直接溢出，漏桶算法能强行限制数据的传输速度。</p>
+<p><strong>两者区别</strong></p>
+<p>漏桶算法能强行限制数据的传输速率，而令牌桶算法能够在限制数据的平均传输速度外，还允许某种程度的突发传输，因此它适合具有突发特性的流量。</p>
+<h4 id="Linux如何查看端口占用情况"><a href="#Linux如何查看端口占用情况" class="headerlink" title="Linux如何查看端口占用情况"></a>Linux如何查看端口占用情况</h4><ol>
+<li>查找被占用端口</li>
 </ol>
-<h4 id="Redis事务的CAS方案"><a href="#Redis事务的CAS方案" class="headerlink" title="Redis事务的CAS方案"></a>Redis事务的CAS方案</h4><p>WATCH命令可以为Redis事务提供CAS保证。</p>
-<p>被WATCH的键会被监视，并会发现这些键是否被改动过，如果有至少一个被监视的键在EXEC执行前被修改，那么整个事务都会被取消。</p>
-<h4 id="如何保证Redis并发竞争问题"><a href="#如何保证Redis并发竞争问题" class="headerlink" title="如何保证Redis并发竞争问题"></a>如何保证Redis并发竞争问题</h4><p>如果有多客户端并发同时写一个key，可能本来应该先到的数据后到了，导致数据版本发生错误。</p>
-<p>我们可以使用Redis自带的CAS乐观锁方案。也可以基于ZK 实现分布式锁，确保同一时间只有一个系统实例可以在操作某个key。</p>
+<p><strong>netstat -tln</strong><br>2. 查看端口属于哪个程序？<br><strong>lsof -i :8080</strong></p>
+<h4 id="如何实现跨线程间的传递数据？"><a href="#如何实现跨线程间的传递数据？" class="headerlink" title="如何实现跨线程间的传递数据？"></a>如何实现跨线程间的传递数据？</h4><p>可以使用阿里开源的TTL:TransmittableThreadLocal </p>
+<p>当被问到 不使用开源，还能有什么办法？我竟一时懵逼了。</p>
+<p>我们可以将需要传递的数据放在JVM内存的一个map里面，key为线程ID，value为需要传递的值；或者将这个map放到redis等公共空间都可以。</p>
+<h4 id="如何避免MySQL死锁？"><a href="#如何避免MySQL死锁？" class="headerlink" title="如何避免MySQL死锁？"></a>如何避免MySQL死锁？</h4><ol>
+<li>对索引加锁顺序不一致可能会导致死锁，如果可以，尽量以相同顺序来防伪索引记录和表。</li>
+<li>Gap锁有可能对导致死锁，Mysql的隔离界别是RR，使用行锁+Gap锁来解决幻读问题，如果幻读问题影响不大，那么可以考虑将隔离级别更改为RC。</li>
+<li>为表增加合适的索引，因为不走索引的情况，会对表加锁，死锁概率提高。</li>
+<li>MyISAM只支持表锁，采用一次封锁技术来保证事务之间不会发送死锁。我们也可以采用同样的思想，在事务中一次锁定所需要的全部资源，减少死锁概率。</li>
+<li>将大事务拆分为小事务。</li>
+<li>避免同一时间运行多个对同一表进行读写的脚本。定时任务等</li>
+<li>设置锁等待超时参数innodb_lock_wait_timeout。</li>
+</ol>
+<blockquote>
+<p>参考列表</p>
+<ol>
+<li><a href="https://www.aneasystone.com/archives/2018/04/solving-dead-locks-four.html" target="_blank" rel="noopener">https://www.aneasystone.com/archives/2018/04/solving-dead-locks-four.html</a></li>
+<li><a href="https://www.jianshu.com/p/a59c13e70582" target="_blank" rel="noopener">https://www.jianshu.com/p/a59c13e70582</a></li>
+<li><a href="https://www.zhihu.com/question/54895548" target="_blank" rel="noopener">https://www.zhihu.com/question/54895548</a><br>待续<del>~</del></li>
+</ol>
+</blockquote>
 
     </div>
 
@@ -319,7 +353,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Redis/" rel="tag"># Redis</a>
+              <a href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag"># 面试</a>
           </div>
 
         
@@ -328,12 +362,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/06/redis7/" rel="prev" title="Redis知识归纳(七)缓存与数据库双写一致性">
-      <i class="fa fa-chevron-left"></i> Redis知识归纳(七)缓存与数据库双写一致性
+    <a href="/2020/04/29/threadLocal/" rel="prev" title="Java基础之ThreadLocal(一)">
+      <i class="fa fa-chevron-left"></i> Java基础之ThreadLocal(一)
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/04/16/sort/" rel="next" title="重学算法之排序">
-      重学算法之排序 <i class="fa fa-chevron-right"></i>
+    <a href="/2020/05/11/mysql-log/" rel="next" title="MySQL之日志及主从复制篇">
+      MySQL之日志及主从复制篇 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -394,7 +428,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#用法"><span class="nav-number">1.</span> <span class="nav-text">用法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么Redis不支持回滚"><span class="nav-number">2.</span> <span class="nav-text">为什么Redis不支持回滚</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis事务的CAS方案"><span class="nav-number">2.1.</span> <span class="nav-text">Redis事务的CAS方案</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何保证Redis并发竞争问题"><span class="nav-number">2.2.</span> <span class="nav-text">如何保证Redis并发竞争问题</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Http与Https有什么区别？"><span class="nav-number">1.</span> <span class="nav-text">Http与Https有什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何设计一个秒杀系统？"><span class="nav-number">2.</span> <span class="nav-text">如何设计一个秒杀系统？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Linux如何查看端口占用情况"><span class="nav-number">3.</span> <span class="nav-text">Linux如何查看端口占用情况</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何实现跨线程间的传递数据？"><span class="nav-number">4.</span> <span class="nav-text">如何实现跨线程间的传递数据？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何避免MySQL死锁？"><span class="nav-number">5.</span> <span class="nav-text">如何避免MySQL死锁？</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
