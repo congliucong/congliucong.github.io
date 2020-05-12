@@ -7,6 +7,8 @@ categories: Spring
 
 上篇文章我们通过手动加载bean，来大概的走了一遍bean的加载整个流程。这篇文章我们从ApplicationContext的角度来分析一下这个过程。
 
+<!-- more -->
+
 ## ApplicationContext
 
 ![](spring-refresh/15409479819725.jpg)
