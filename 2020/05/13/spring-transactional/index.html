@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前面几篇文件讲述了spring Ioc、Aop等相关原理，虽然不是到具体每行代码，但是起码熟悉了整个流程，今天这篇文章再来熟悉一下相关的事务原理，起码以后被问到了，不会说只能回答个事务的传播机制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring之事务原理">
+<meta property="og:url" content="http://yoursite.com/2020/05/13/spring-transactional/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="前面几篇文件讲述了spring Ioc、Aop等相关原理，虽然不是到具体每行代码，但是起码熟悉了整个流程，今天这篇文章再来熟悉一下相关的事务原理，起码以后被问到了，不会说只能回答个事务的传播机制。">
+<meta property="og:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589337903.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589338751.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589350741.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589352924.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589354237.jpg">
+<meta property="article:published_time" content="2020-05-13T02:06:55.000Z">
+<meta property="article:modified_time" content="2020-05-13T13:17:27.818Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Spring">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/13/spring-transactional/1589337903.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/13/spring-transactional/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>Spring之事务原理 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/13/spring-transactional/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring之事务原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-13 10:06:55" itemprop="dateCreated datePublished" datetime="2020-05-13T10:06:55+08:00">2020-05-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/13/spring-transactional/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/13/spring-transactional/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前面几篇文件讲述了spring Ioc、Aop等相关原理，虽然不是到具体每行代码，但是起码熟悉了整个流程，今天这篇文章再来熟悉一下相关的事务原理，起码以后被问到了，不会说只能回答个事务的传播机制。</p>
+<a id="more"></a>
+
+<h2 id="Spring事务属性"><a href="#Spring事务属性" class="headerlink" title="Spring事务属性"></a>Spring事务属性</h2><p>首先我们需要明确的是，Spring对事务的支持是需要数据库进行支持的，如果MySQL的存储引擎是MyISAM，那么即便是Spring对事务进行了设置，但是事务也是无效，因此，从根本上MyISAM就不支持事务，所以Spring的事务也就无从谈起了。</p>
+<p>在Mysql篇章中，我们提到，Mysql的undo log就是用来进行事务回滚的，回滚日志记录的是逻辑日志，是数据修改前的记录，当需要进行回滚时，直接利用undo log将数据恢复成修改前的样子即可。</p>
+<h3 id="Spring两种方式支持事务管理"><a href="#Spring两种方式支持事务管理" class="headerlink" title="Spring两种方式支持事务管理"></a>Spring两种方式支持事务管理</h3><ol>
+<li>编程式事务管理</li>
+</ol>
+<p>通俗的说就是通过<strong>TransactionTemplate</strong>手动管理事务，一般应用场景不多。 </p>
+<ol start="2">
+<li>声明式事务管理</li>
+</ol>
+<p>通过<strong>@Transactional</strong>注解实现事务，这种实现原理是通过AOP实现的。</p>
+<h3 id="Spring事务抽象"><a href="#Spring事务抽象" class="headerlink" title="Spring事务抽象"></a>Spring事务抽象</h3><p>Spring使用统一的事务抽象，来使得不同应用程序都可以使用统一的编程模型。Spring事务管理相关的主要有三个核心接口：</p>
+<ol>
+<li><strong>PlatformTransactionManager</strong>：定义了事务操作的行为，Spring事务的核心。<br><img src="/2020/05/13/spring-transactional/1589337903.jpg" alt></li>
+</ol>
+<p><strong><em>getTransaction</em></strong>方法：事务获取操作，根据事务属性定义，获取当前事务或者创建新事务。</p>
+<p><strong><em>commit</em></strong>方法：事务提交操作，但是这列并不是直接提交事务，而是根据当前事务状态提交或者回滚。</p>
+<p><strong><em>rollback</em></strong>方法：事务回滚操作，但是这里并不一定直接回滚，有可能只是标记事务为只读，等待其他调用方执行回滚。</p>
+<ol start="2">
+<li><strong>TransactionDefinition</strong>：定义事务相关信息，如隔离级别，传播行为等。<br><img src="/2020/05/13/spring-transactional/1589338751.jpg" alt></li>
+</ol>
+<p><strong><em>getPropagationBehavior</em></strong>方法：返回事务的传播属性，默认值是PROPAGATION_REQUIRED。</p>
+<p><strong><em>getIsolationLevel</em></strong>方法：返回事务隔离级别，事务隔离级别只有在创建新事物时才有效，也就是说只对应传播属性：PROPAGATION_REQUIRED和PROPAGATION_REQUIRES_NEW。</p>
+<p><strong><em>getTimeout</em></strong>方法：返回事务超时时间，以秒为单位，同样只在创建新事务时才有效。</p>
+<p><strong><em>isReadOnly</em></strong>方法：是否优化为只读。</p>
+<ol start="3">
+<li><strong>TransactionStatus</strong>：事务的运行状态。</li>
+</ol>
+<p><strong><em>isNewTransaction</em></strong>方法：当前方法是否创建了新事务</p>
+<p><strong><em>hasSavepoint</em></strong>方法：在嵌套事务场景中，判断当前事务是否包含保存点</p>
+<p><strong><em>setRollbackOnly</em></strong>和<strong><em>isRollbackOnly</em></strong>方法：只读属性设置</p>
+<p><strong><em>flush</em></strong>方法：刷新底层会话中的修改到数据库</p>
+<p><strong><em>isCompleted</em></strong>方法：判断当前事务是否已完成</p>
+<h3 id="事务传播机制"><a href="#事务传播机制" class="headerlink" title="事务传播机制"></a>事务传播机制</h3><ol>
+<li><strong>PROPAGATION_REQUIRED</strong>：@Transactional注解默认的事务传播机制。如果当前存在事务，那么则加入事务；如果当前没有事务，则创建一个新的事务。</li>
+<li><strong>PROPAGATION_REQUIRES_NEW</strong>：创建一个新的事务，如果当前存在事务，则把当前事务挂起。也就是说不管外部方法有没有事务，当前方法都会开启新的事务，并且开启的事务不会会受到外部事物的影响。</li>
+<li><strong>PROPAGATION_NESTED</strong>：如果当前存在事务，那么创建一个事务作为当前事务的嵌套事务来运行。如果当前没有事务，则创建一个新的事务。也就是说，如果外部方法没有事务，当前方法会开启自己的事务。如果外部方法开启了事务，那么当前方法属于外部事务的子事务，如果外部事务回滚，那么子事务也回滚，而子事务回滚不影响外部主事务。</li>
+<li><strong>PROPAGATION_MANDATORY</strong>：如果当前存在事务，则加入；否则则抛出异常。</li>
+<li><strong>PROPAGATION_SUPPORTS</strong>：当前存在事务，则加入；如果当前没有事务，则以非事务方式运行</li>
+<li><strong>PROPAGATION_SUPPORTS</strong>：以非事务运行，如果当前存在事务，则挂起当前事务。</li>
+<li>PROPAGATION_NEVER：以非事务运行，如果当前存在事务，则抛出异常</li>
+</ol>
+<h3 id="事务的隔离级别"><a href="#事务的隔离级别" class="headerlink" title="事务的隔离级别"></a>事务的隔离级别</h3><p>Spring的事务隔离级别跟MySQL数据库一致。</p>
+<ol>
+<li><strong>ISOLATION_DEFAULT</strong>：使用后端数据库默认的隔离级别。MySQL默认采用RR。</li>
+<li><strong>ISOLATION_READ_UNCOMMITTED</strong>：读未提交，会有脏读、幻读、不可重复读的问题。</li>
+<li><strong>ISOLATION_READ_COMMITTED</strong>：读已提交，可以阻止脏读，但是幻读、不可重复读还会发生。</li>
+<li><strong>ISOLATION_REPEATABLE_READ</strong>：可重复读，可以阻止脏读、不可重复读，但是幻读还有可能发生。</li>
+<li><strong>ISOLATION_SERIALIZABLE</strong>：串行化，所有操作串行执行。</li>
+</ol>
+<p>在MySQL中，我们提到过，在InnoDB存储引擎下，mysql通过next-key lock锁可以避免幻读的产生。</p>
+<h3 id="Transactional事务的源码实现"><a href="#Transactional事务的源码实现" class="headerlink" title="@Transactional事务的源码实现"></a>@Transactional事务的源码实现</h3><p>在分析Spring IOC时，我们提到，在bean初始化时，<strong>createBean()—&gt;doCreateBean()—-&gt;initializeBean()</strong>：<br><img src="/2020/05/13/spring-transactional/1589350741.jpg" alt></p>
+<p>可以看出<strong>BeanPostProcessor</strong>中的两个方法 <strong>postProcessBeforeInitilization</strong>和<strong>postProcessAfterInitilization</strong>分别是在bean的init方法前后执行。其中代理对象就是在<strong>postProcessAfterInitialization</strong>中完成的，用代理的bean来替换原来的bean。</p>
+<p>默认情况下，<strong>BeanPostProcessor</strong>是通过默认实现类 <strong>DefaultAdvisorAutoProxyCreator</strong>实现，而该类则继承于<strong>AbstractAdvisorAutoProxyCreator</strong>类，<strong>AbstractAdvisorAutoProxyCreator</strong>类又继承于<strong>AbstractAutoProxyCreator</strong>类。类图如下：<br><img src="/2020/05/13/spring-transactional/1589352924.jpg" alt></p>
+<p>而真正实现<strong>postProcessAfterInnitialization</strong>方法是在父类<strong>AbstractAutoProxyCreator</strong>类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">//org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#postProcessAfterInitialization</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(@Nullable Object bean, String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (bean != <span class="keyword">null</span>) &#123;</span><br><span class="line">            Object cacheKey = getCacheKey(bean.getClass(), beanName);</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.earlyProxyReferences.remove(cacheKey) != bean) &#123;</span><br><span class="line">                <span class="comment">//创建代理对象</span></span><br><span class="line">                <span class="keyword">return</span> wrapIfNecessary(bean, beanName, cacheKey);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">   <span class="comment">//org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#wrapIfNecessary</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">wrapIfNecessary</span><span class="params">(Object bean, String beanName, Object cacheKey)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.hasLength(beanName) &amp;&amp; <span class="keyword">this</span>.targetSourcedBeans.contains(beanName)) &#123;</span><br><span class="line">            <span class="keyword">return</span> bean;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (Boolean.FALSE.equals(<span class="keyword">this</span>.advisedBeans.get(cacheKey))) &#123;</span><br><span class="line">            <span class="keyword">return</span> bean;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) &#123;</span><br><span class="line">            <span class="keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);</span><br><span class="line">            <span class="keyword">return</span> bean;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Create proxy if we have advice.</span></span><br><span class="line">        <span class="comment">// 查找advice从而创建代理类</span></span><br><span class="line">        Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">if</span> (specificInterceptors != DO_NOT_PROXY) &#123;</span><br><span class="line">            <span class="keyword">this</span>.advisedBeans.put(cacheKey, Boolean.TRUE);</span><br><span class="line">            Object proxy = createProxy(</span><br><span class="line">                    bean.getClass(), beanName, specificInterceptors, <span class="keyword">new</span> SingletonTargetSource(bean));</span><br><span class="line">            <span class="keyword">this</span>.proxyTypes.put(cacheKey, proxy.getClass());</span><br><span class="line">            <span class="keyword">return</span> proxy;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#createProxy</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">createProxy</span><span class="params">(Class&lt;?&gt; beanClass, @Nullable String beanName,</span></span></span><br><span class="line"><span class="function"><span class="params">            @Nullable Object[] specificInterceptors, TargetSource targetSource)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.beanFactory <span class="keyword">instanceof</span> ConfigurableListableBeanFactory) &#123;</span><br><span class="line">            AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) <span class="keyword">this</span>.beanFactory, beanName, beanClass);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//实例化代理工厂类</span></span><br><span class="line">        ProxyFactory proxyFactory = <span class="keyword">new</span> ProxyFactory();</span><br><span class="line">        proxyFactory.copyFrom(<span class="keyword">this</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!proxyFactory.isProxyTargetClass()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (shouldProxyTargetClass(beanClass, beanName)) &#123;</span><br><span class="line">                proxyFactory.setProxyTargetClass(<span class="keyword">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                evaluateProxyInterfaces(beanClass, proxyFactory);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);</span><br><span class="line">        proxyFactory.addAdvisors(advisors);</span><br><span class="line">        proxyFactory.setTargetSource(targetSource);</span><br><span class="line">        customizeProxyFactory(proxyFactory);</span><br><span class="line"></span><br><span class="line">        proxyFactory.setFrozen(<span class="keyword">this</span>.freezeProxy);</span><br><span class="line">        <span class="keyword">if</span> (advisorsPreFiltered()) &#123;</span><br><span class="line">            proxyFactory.setPreFiltered(<span class="keyword">true</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//创建代理对象</span></span><br><span class="line">        <span class="keyword">return</span> proxyFactory.getProxy(getProxyClassLoader());</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后通过调用<em>ProxyFactory#getProxy(java.lang.ClassLoader)</em>方法来创建代理对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getProxy</span><span class="params">(@Nullable ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> createAopProxy().getProxy(classLoader);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">synchronized</span> AopProxy <span class="title">createAopProxy</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.active) &#123;</span><br><span class="line">        activate();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> getAopProxyFactory().createAopProxy(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> AopProxyFactory <span class="title">getAopProxyFactory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.aopProxyFactory;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ProxyCreatorSupport</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.aopProxyFactory = <span class="keyword">new</span> DefaultAopProxyFactory();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出，这里和AOP一样，最终是通过<em>AopProxy.getProxy()</em>去获取代理对象。而这个AopProxy则是<strong>DefaultAopProxyFactory</strong>，因此这里就跟AOP一样了，根据目标类是否接口或者强制要求cglib等来决定是使用JDK动态代理还是CGLIB。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DefaultAopProxyFactory</span> <span class="keyword">implements</span> <span class="title">AopProxyFactory</span>, <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> AopProxy <span class="title">createAopProxy</span><span class="params">(AdvisedSupport config)</span> <span class="keyword">throws</span> AopConfigException </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) &#123;</span><br><span class="line">            Class&lt;?&gt; targetClass = config.getTargetClass();</span><br><span class="line">            <span class="keyword">if</span> (targetClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> AopConfigException(<span class="string">"TargetSource cannot determine target class: "</span> +</span><br><span class="line">                        <span class="string">"Either an interface or a target is required for proxy creation."</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> ObjenesisCglibAopProxy(config);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> JdkDynamicAopProxy(config);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上，我们已经拥有了对象的代理类，当调用代理对象的方法时，会触发对应的AOP增强拦截器。事务增强对应的是<strong>TransactionInterceptor</strong>类，该类继承<strong>MethodInterceptor</strong>。<br><img src="/2020/05/13/spring-transactional/1589354237.jpg" alt></p>
+<p>当调用目标类的方法时，最终会转发到<strong>TransactionInterceptor</strong>类的invoke方法，会调用<strong>TransactionAspectSupport</strong>的<strong>invokeWithinTransaction</strong>方法会进行事务处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(MethodInvocation invocation)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">    <span class="comment">// Work out the target class: may be &#123;@code null&#125;.</span></span><br><span class="line">    <span class="comment">// The TransactionAttributeSource should be passed the target class</span></span><br><span class="line">    <span class="comment">// as well as the method, which may be from an interface.</span></span><br><span class="line">    Class&lt;?&gt; targetClass = (invocation.getThis() != <span class="keyword">null</span> ? AopUtils.getTargetClass(invocation.getThis()) : <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Adapt to TransactionAspectSupport's invokeWithinTransaction...</span></span><br><span class="line">    <span class="keyword">return</span> invokeWithinTransaction(invocation.getMethod(), targetClass, invocation::proceed);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">invokeWithinTransaction</span><span class="params">(Method method, @Nullable Class&lt;?&gt; targetClass,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> InvocationCallback invocation)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If the transaction attribute is null, the method is non-transactional.</span></span><br><span class="line">    TransactionAttributeSource tas = getTransactionAttributeSource();</span><br><span class="line">    <span class="keyword">final</span> TransactionAttribute txAttr = (tas != <span class="keyword">null</span> ? tas.getTransactionAttribute(method, targetClass) : <span class="keyword">null</span>);</span><br><span class="line">    <span class="keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);</span><br><span class="line">    <span class="keyword">final</span> String joinpointIdentification = methodIdentification(method, targetClass, txAttr);</span><br><span class="line"></span><br><span class="line">   <span class="comment">// txAttr（事务属性）为空或者tm（事务管理器）为空时，是声明式事务</span></span><br><span class="line">    <span class="keyword">if</span> (txAttr == <span class="keyword">null</span> || !(tm <span class="keyword">instanceof</span> CallbackPreferringPlatformTransactionManager)) &#123;</span><br><span class="line">        <span class="comment">// 事务获取</span></span><br><span class="line">        TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);</span><br><span class="line">        Object retVal = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 通过回调执行目标方法。</span></span><br><span class="line">            retVal = invocation.proceedWithInvocation();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            <span class="comment">// 目标方法执行跑出异常，根据异常类型执行事务提交或者回滚操作</span></span><br><span class="line">            completeTransactionAfterThrowing(txInfo, ex);</span><br><span class="line">            <span class="keyword">throw</span> ex;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">//清理当前线程事务信息</span></span><br><span class="line">            cleanupTransactionInfo(txInfo);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//目标方法执行成功，提交事务。</span></span><br><span class="line">        commitTransactionAfterReturning(txInfo);</span><br><span class="line">        <span class="keyword">return</span> retVal;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">//............</span></span><br><span class="line">      <span class="comment">//带回调的事务执行处理，一般用于编程式事务。先不关注。</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>就不详细跟进去了。这里我们关注一下另外一个问题，我们在ThreadLocal里面提到，ThreadLocal的应用场景之一就是Spring事务，那么我们看下是怎么实现的？</p>
+<h3 id="Spring-事务同步"><a href="#Spring-事务同步" class="headerlink" title="Spring 事务同步"></a>Spring 事务同步</h3><p>当获取事务会调用<strong><em>createTransactionIfNecessary</em></strong>方法，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> TransactionInfo <span class="title">createTransactionIfNecessary</span><span class="params">(@Nullable PlatformTransactionManager tm,</span></span></span><br><span class="line"><span class="function"><span class="params">        @Nullable TransactionAttribute txAttr, <span class="keyword">final</span> String joinpointIdentification)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// .............</span></span><br><span class="line">    TransactionStatus status = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (txAttr != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (tm != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">//获取事务</span></span><br><span class="line">            status = tm.getTransaction(txAttr);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//........</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> TransactionStatus <span class="title">getTransaction</span><span class="params">(@Nullable TransactionDefinition definition)</span> <span class="keyword">throws</span> TransactionException </span>&#123;</span><br><span class="line">    Object transaction = doGetTransaction();</span><br><span class="line">   <span class="comment">//  省略。。。。。。</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看下使用最多的<strong><em>DataSourceTransactionManager</em></strong>的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">doGetTransaction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    DataSourceTransactionObject txObject = <span class="keyword">new</span> DataSourceTransactionObject();</span><br><span class="line">    txObject.setSavepointAllowed(isNestedTransactionAllowed());</span><br><span class="line">    ConnectionHolder conHolder =</span><br><span class="line">            (ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());</span><br><span class="line">    txObject.setConnectionHolder(conHolder, <span class="keyword">false</span>);</span><br><span class="line">    <span class="keyword">return</span> txObject;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">getResource</span><span class="params">(Object key)</span> </span>&#123;</span><br><span class="line">    Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);</span><br><span class="line">    Object value = doGetResource(actualKey);</span><br><span class="line">    <span class="keyword">if</span> (value != <span class="keyword">null</span> &amp;&amp; logger.isTraceEnabled()) &#123;</span><br><span class="line">        logger.trace(<span class="string">"Retrieved value ["</span> + value + <span class="string">"] for key ["</span> + actualKey + <span class="string">"] bound to thread ["</span> +</span><br><span class="line">                Thread.currentThread().getName() + <span class="string">"]"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Object <span class="title">doGetResource</span><span class="params">(Object actualKey)</span> </span>&#123;</span><br><span class="line">    Map&lt;Object, Object&gt; map = resources.get();</span><br><span class="line">    <span class="keyword">if</span> (map == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Object value = map.get(actualKey);</span><br><span class="line">    <span class="comment">// Transparently remove ResourceHolder that was marked as void...</span></span><br><span class="line">    <span class="keyword">if</span> (value <span class="keyword">instanceof</span> ResourceHolder &amp;&amp; ((ResourceHolder) value).isVoid()) &#123;</span><br><span class="line">        map.remove(actualKey);</span><br><span class="line">        <span class="comment">// Remove entire ThreadLocal if empty...</span></span><br><span class="line">        <span class="keyword">if</span> (map.isEmpty()) &#123;</span><br><span class="line">            resources.remove();</span><br><span class="line">        &#125;</span><br><span class="line">        value = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ThreadLocal&lt;Map&lt;Object, Object&gt;&gt; resources =</span><br><span class="line">        <span class="keyword">new</span> NamedThreadLocal&lt;&gt;(<span class="string">"Transactional resources"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>可以看出 <strong>TransactionSynchronizationManager</strong>通过<strong>ThreadLocal</strong>对象在当前线程记录了resources和synchronizations属性。reources是一个HashMap，用于记录当前参与事务的事务资源，方便进行事务同步。在DataSourceTransactionManager中就是以dataSoure作为key，保存数据库连接，这样在同一个线程中，不同方法调用就可以通过dateSource获取相同的数据库连接，从而保证所有操作在同一个事务中进行。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>在Bean初始化过程中，执行createBean()—-&gt;doCreateBean()—-&gt;initializeBean()时，先执行beanPostProcessor的before方法，然后执行init方法，随后执行beanPostProcessor的after方法，此时会用子类AbstractAutoProxyCreator，子类实现BeanPostProcessor的after方法，在该方法中创建代理对象；然后调用DefaultAopProxyFactory的getProxy方法，根据目标类是否接口或者强制要求cglib等要求来决定使用JDK动态代理还是CGLIB来生成代理对象，这里跟AOP的原理一样，所以也可以看出来Spring的实现原理其实就是通过动态代理生成代理对象来实现的。</p>
+<p>当生成代理对象后，如果调用目标类的方法时，会转发到TransactionInterceptor的invoke方法，然后调用TransactionAspectSupport的invokeWithinTransaction方法来实现事务。随后就是getTransaction，通过threadLocal来保证所有操作都在同一个事务中，回调目标方法，然后提交事务等。</p>
+<blockquote>
+<p>参考列表：</p>
+<ol>
+<li><a href="https://www.cnblogs.com/youzhibing/p/6690341.html#autoid-2-2-0" target="_blank" rel="noopener">https://www.cnblogs.com/youzhibing/p/6690341.html#autoid-2-2-0</a></li>
+<li><a href="http://www.linkedkeeper.com/1045.html" target="_blank" rel="noopener">http://www.linkedkeeper.com/1045.html</a></li>
+<li><a href="https://jacobchang.cn/transactional-of-spring.html" target="_blank" rel="noopener">https://jacobchang.cn/transactional-of-spring.html</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/54067384" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/54067384</a></li>
+</ol>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Spring/" rel="tag"># Spring</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/11/mysql-log/" rel="prev" title="MySQL之日志及主从复制篇">
+      <i class="fa fa-chevron-left"></i> MySQL之日志及主从复制篇
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spring事务属性"><span class="nav-number">1.</span> <span class="nav-text">Spring事务属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spring两种方式支持事务管理"><span class="nav-number">1.1.</span> <span class="nav-text">Spring两种方式支持事务管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spring事务抽象"><span class="nav-number">1.2.</span> <span class="nav-text">Spring事务抽象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务传播机制"><span class="nav-number">1.3.</span> <span class="nav-text">事务传播机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务的隔离级别"><span class="nav-number">1.4.</span> <span class="nav-text">事务的隔离级别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transactional事务的源码实现"><span class="nav-number">1.5.</span> <span class="nav-text">@Transactional事务的源码实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spring-事务同步"><span class="nav-number">1.6.</span> <span class="nav-text">Spring 事务同步</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">1.7.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">296k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">4:29</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
