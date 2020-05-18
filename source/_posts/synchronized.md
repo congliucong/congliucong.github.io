@@ -12,11 +12,11 @@ categories: Java基础
 
 ### synchronized基本原理及用法
 
-synchronized首先是一种悲观锁，Java中每一个对象都是一把锁。具体用法两种：
+synchronized首先是一种悲观锁，Java中每一个对象都是一把锁。具体用法三种：
 
-* 锁方法，锁普通同步
-* 方式是锁的当前实例对象，锁静态同步方法，锁的是当前类的class文件
-* 锁代码块，锁的是括号里面的对象。
+1. 普通同步方法，是锁的当前实例对象
+2. 静态同步方法，锁的是当前类的class文件
+3. 同步代码块，锁的是括号里面的对象。
 
 从字节码角度来看，锁方法和锁代码块生成的jvm字节码是不同的。
 
@@ -87,8 +87,8 @@ monitor对象主要包括owner，cxq，EntryList，WaitSet。
 
 * owner： 主要存储拥有锁的线程
 * cxq： 当一个线程尝试获得锁，如果当前锁被占用，会把该线程插入到cxq队列的对首
-* EntryList: 当持有锁的线程释放锁之前，会把cxq中的所有元素移动到EntryList中，并唤醒entryList中的某个线程，重新竞争锁。
-* WaitSet: 当owner线程被wait方法阻塞，就会转义到waitset队列中。当某个时刻被notify/notifyAll后，会从waitset中转移大entryList中。
+* EntryList: 当持有锁的线程释放锁之前，会把cxq中的所有元素移动到EntryList中，并唤醒EntryList中的某个线程，重新竞争锁。
+* WaitSet: 当owner线程被wait方法阻塞，就会转义到Waitset队列中。当某个时刻被notify/notifyAll后，会从Waitset中转移大EntryList中。
 
 ### 锁优化以及锁升级
 

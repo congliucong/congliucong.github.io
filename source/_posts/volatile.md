@@ -58,7 +58,7 @@ Java内存模型规定，所有变量都存储在主内存。每条线程都拥�
 
 ### 内存间交互操作
 
-Java内存模型定义了8种操作来完成如何从主内存拷贝到工作内存、如果从工作内存同步到主内从这一类的细节。lock、unlock、read、load、use、assign、store、wtire，但基于理解难度和严谨性考虑，已经放弃采用这8中操作去定义Java内存模型的访问协议，缩减为4中：read write lock unlock。
+Java内存模型定义了8种操作来完成如何从主内存拷贝到工作内存、如何从工作内存同步到主内从这一类的细节。lock、unlock、read、load、use、assign、store、wtire，但基于理解难度和严谨性考虑，已经放弃采用这8中操作去定义Java内存模型的访问协议，缩减为4中：read write lock unlock。
 
 ### 原子性、可见性和有序性
 
