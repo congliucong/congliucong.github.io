@@ -30,7 +30,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/01/18/volatile/image-20200501120518224.png">
 <meta property="og:image" content="http://yoursite.com/2020/01/18/volatile/image-20200501112658155.png">
 <meta property="article:published_time" content="2020-01-18T15:04:22.000Z">
-<meta property="article:modified_time" content="2020-05-01T06:23:50.613Z">
+<meta property="article:modified_time" content="2020-05-18T12:51:53.495Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
@@ -311,7 +311,7 @@
 <h2 id="Java内存模型"><a href="#Java内存模型" class="headerlink" title="Java内存模型"></a>Java内存模型</h2><h3 id="主内存与工作内存"><a href="#主内存与工作内存" class="headerlink" title="主内存与工作内存"></a>主内存与工作内存</h3><p>Java内存模型是用来屏蔽各种硬件和操作系统的内存访问差异的一种规范，以实现Java程序在各种平台下都能达到一致的内存访问效果。</p>
 <p>Java内存模型规定，所有变量都存储在主内存。每条线程都拥有自己的工作内存，线程的工作内存中保存了被该线程使用的变量的主内存副本，线程对变量的所有操作都必须在工作内存中进行，而不能直接读写主内存中的数据。不同线程之间也无法直接访问对方工作内存中的变量，线程之间的变量值传递均需要通过主内存来完成。</p>
 <p><img src="/2020/01/18/volatile/image-20200501112658155.png" alt></p>
-<h3 id="内存间交互操作"><a href="#内存间交互操作" class="headerlink" title="内存间交互操作"></a>内存间交互操作</h3><p>Java内存模型定义了8种操作来完成如何从主内存拷贝到工作内存、如果从工作内存同步到主内从这一类的细节。lock、unlock、read、load、use、assign、store、wtire，但基于理解难度和严谨性考虑，已经放弃采用这8中操作去定义Java内存模型的访问协议，缩减为4中：read write lock unlock。</p>
+<h3 id="内存间交互操作"><a href="#内存间交互操作" class="headerlink" title="内存间交互操作"></a>内存间交互操作</h3><p>Java内存模型定义了8种操作来完成如何从主内存拷贝到工作内存、如何从工作内存同步到主内从这一类的细节。lock、unlock、read、load、use、assign、store、wtire，但基于理解难度和严谨性考虑，已经放弃采用这8中操作去定义Java内存模型的访问协议，缩减为4中：read write lock unlock。</p>
 <h3 id="原子性、可见性和有序性"><a href="#原子性、可见性和有序性" class="headerlink" title="原子性、可见性和有序性"></a>原子性、可见性和有序性</h3><p>Java内存模型是围绕着在并发过程中如何处理原子性、可见性和有序性这三个特征来建立的。</p>
 <h4 id="原子性"><a href="#原子性" class="headerlink" title="原子性"></a>原子性</h4><p>原子性不用多说，就是一个操作或者多个操作要么全部执行要么全部不执行。JMM保证对基本数据类型的访问、读写都是具备原子性的，如果需要对更大的原子性进行保证，则只能通过锁或者Synchronized关键字来实现。</p>
 <h4 id="可见性"><a href="#可见性" class="headerlink" title="可见性"></a>可见性</h4><p>可见性就是指当一个线程修改了共享变量的值时，其他线程能够立即得知到这个修改。Java内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方式实现可见性的，无论对于普通变量还是volatile变量都是如此。只不过volatile变量可以保证新值能够立即同步到主内存，以及每次使用前立即从主内存刷新，换句话说就是volatile保证了多线程操作变量时的可见性，而普通变量则做不到。同时synchronized 和final也能实现可见性。</p>
@@ -429,7 +429,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-count">47</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -440,7 +440,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -478,12 +478,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">296k</span>
+    <span title="站点总字数">336k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">4:29</span>
+    <span title="站点阅读时长">5:05</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>

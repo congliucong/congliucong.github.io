@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="从这篇文章开始，我们开始从源码角度分析SpringBoot的一些相关原理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spring boot源码分析（一）：启动过程">
+<meta property="og:url" content="http://yoursite.com/2020/05/18/spring-boot1/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="从这篇文章开始，我们开始从源码角度分析SpringBoot的一些相关原理。">
+<meta property="article:published_time" content="2020-05-18T07:20:19.000Z">
+<meta property="article:modified_time" content="2020-05-18T15:42:21.453Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="SpringBoot">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/18/spring-boot1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>spring boot源码分析（一）：启动过程 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/spring-boot1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spring boot源码分析（一）：启动过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-18 15:20:19" itemprop="dateCreated datePublished" datetime="2020-05-18T15:20:19+08:00">2020-05-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/18/spring-boot1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/18/spring-boot1/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>38k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>35 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>从这篇文章开始，我们开始从源码角度分析SpringBoot的一些相关原理。</p>
+<a id="more"></a>
+
+<h2 id="SpringBoot的入口"><a href="#SpringBoot的入口" class="headerlink" title="SpringBoot的入口"></a>SpringBoot的入口</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Spring Boot 应用的标识</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 程序启动入口</span></span><br><span class="line">        <span class="comment">// 启动嵌入式的 Tomcat 并初始化 Spring 环境及其各 Spring 组件</span></span><br><span class="line">        SpringApplication.run(Application<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SpringApplication的构造方法"><a href="#SpringApplication的构造方法" class="headerlink" title="SpringApplication的构造方法"></a>SpringApplication的构造方法</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Static helper that can be used to run a &#123;<span class="doctag">@link</span> SpringApplication&#125; from the</span></span><br><span class="line"><span class="comment"> * specified sources using default settings and user supplied arguments.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> primarySources the primary sources to load</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> args the application arguments (usually passed from a Java main method)</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the running &#123;<span class="doctag">@link</span> ApplicationContext&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Class&lt;?&gt;[] primarySources, String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> SpringApplication(primarySources).run(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当程序开始执行run方法时，会先调用SpringApplication的构造方法。该构造方法会创建一个新的SpringApplication实例。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">SpringApplication</span><span class="params">(ResourceLoader resourceLoader, Class&lt;?&gt;... primarySources)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 初始化资源加载器，默认为null</span></span><br><span class="line">    <span class="keyword">this</span>.resourceLoader = resourceLoader;</span><br><span class="line">    <span class="comment">// 断言主要加载资源类不能为null，否则报错</span></span><br><span class="line">    Assert.notNull(primarySources, <span class="string">"PrimarySources must not be null"</span>);</span><br><span class="line">    <span class="comment">// 初始化主要加载资源类集合并去重</span></span><br><span class="line">    <span class="keyword">this</span>.primarySources = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(Arrays.asList(primarySources));</span><br><span class="line">    <span class="comment">// 设置当前WEB应用类型，主要有是三种： NONE,SERVLET,REACTIVE</span></span><br><span class="line">    <span class="keyword">this</span>.webApplicationType = WebApplicationType.deduceFromClasspath();</span><br><span class="line">    <span class="comment">// 设置应用上下文初始化器，主要从"META-INF/spring.factories"中</span></span><br><span class="line">    <span class="comment">// 读取ApplicationContextInitializer类的实例名称集合并去重，所以一共7个</span></span><br><span class="line">    setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">    <span class="comment">// 设置监听器，主要从"META-INF/spring.factories"中</span></span><br><span class="line">    <span class="comment">// 读取ApplicationListener类的实例名称集合并去重，所以一共11个</span></span><br><span class="line">    setListeners((Collection) getSpringFactoriesInstances(ApplicationListener<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">    <span class="comment">// 找到Main方法所在类，并赋值给mainApplicationClass</span></span><br><span class="line">    <span class="keyword">this</span>.mainApplicationClass = deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Run方法"><a href="#Run方法" class="headerlink" title="Run方法"></a>Run方法</h3><p>SpringBoot启动的运行方法，可以看出主要是各种运行环境的准备工作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(String... args)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 1. 创建并启动计时监控类</span></span><br><span class="line">    StopWatch stopWatch = <span class="keyword">new</span> StopWatch();</span><br><span class="line">    stopWatch.start();</span><br><span class="line">    <span class="comment">// 2. 初始化应用上下文和异常报告集合</span></span><br><span class="line">    ConfigurableApplicationContext context = <span class="keyword">null</span>;</span><br><span class="line">    Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="comment">// 3. 设置系统属性“java.awt.headless”的值，默认为true.用于运行headless服务器，也就是没有显示屏、鼠标的系统，很多监控软件如jconsole需要将该值设为true。</span></span><br><span class="line">    configureHeadlessProperty();</span><br><span class="line">    <span class="comment">// 4. 创建所有spring运行监听器并发布应用启动事件</span></span><br><span class="line">    <span class="comment">// 简单的说就是获取SpringApplicationRunListener类型的实例（EventPublishingEunListener对象）</span></span><br><span class="line">    SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">    listeners.starting();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 5. 初始化默认应用参数类</span></span><br><span class="line">        ApplicationArguments applicationArguments = <span class="keyword">new</span> DefaultApplicationArguments(args);</span><br><span class="line">        <span class="comment">// 6. 根据运行监听器和应用参数来准备spring环境</span></span><br><span class="line">        ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);</span><br><span class="line">        <span class="comment">// 将要忽略的bean参数打开</span></span><br><span class="line">        configureIgnoreBeanInfo(environment);</span><br><span class="line">        <span class="comment">// 7. 创建banner打印类</span></span><br><span class="line">        Banner printedBanner = printBanner(environment);</span><br><span class="line">        <span class="comment">// 8. 创建引用上下文，可以理解为创建一个容器</span></span><br><span class="line">        context = createApplicationContext();</span><br><span class="line">        <span class="comment">// 9. 准备异常报告器，用来支持报告关于启动的错误</span></span><br><span class="line">        exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter<span class="class">.<span class="keyword">class</span>,</span></span><br><span class="line">                new Class[] &#123; ConfigurableApplicationContext.class &#125;, context);</span><br><span class="line">        <span class="comment">// 10. 准备应用上下文，该步骤包括一个非常关键的操作，</span></span><br><span class="line">        <span class="comment">// 将启动类注入到容器，为后续开启自动化提供基础</span></span><br><span class="line">        prepareContext(context, environment, listeners, applicationArguments, printedBanner);</span><br><span class="line">        <span class="comment">// 11. 刷新应用上下文</span></span><br><span class="line">        refreshContext(context);</span><br><span class="line">        <span class="comment">// 12.应用上下文刷新后置处理，做一些扩展功能</span></span><br><span class="line">        afterRefresh(context, applicationArguments);</span><br><span class="line">        <span class="comment">// 13.停止计时监控类</span></span><br><span class="line">        stopWatch.stop();</span><br><span class="line">        <span class="comment">// 14. 输出日志记录执行主类名、时间信息</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">            <span class="keyword">new</span> StartupInfoLogger(<span class="keyword">this</span>.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 15. 发布应用上下文启动监听事件</span></span><br><span class="line">        listeners.started(context);</span><br><span class="line">        <span class="comment">// 16. 执行所有Runner运行期</span></span><br><span class="line">        callRunners(context, applicationArguments);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">        handleRunFailure(context, ex, exceptionReporters, listeners);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 17. 发布应用上下文就绪事件</span></span><br><span class="line">        listeners.running(context);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">        handleRunFailure(context, ex, exceptionReporters, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//18. 返回应用上下文</span></span><br><span class="line">    <span class="keyword">return</span> context;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来详细介绍各个启动的环节</p>
+<ol>
+<li><strong>创建启动计时监控类</strong></li>
+</ol>
+<p>创建并启动计时监控类，可以看到记录了当前任务的名称，默认是空字符串，随后记录了当前springboot应用启动的开始时间。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">StopWatch stopWatch = <span class="keyword">new</span> StopWatch();</span><br><span class="line"><span class="comment">//详细源代码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> IllegalStateException </span>&#123;</span><br><span class="line">   start(<span class="string">""</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(String taskName)</span> <span class="keyword">throws</span> IllegalStateException </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.currentTaskName != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Can't start StopWatch: it's already running"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">this</span>.currentTaskName = taskName;</span><br><span class="line">		<span class="keyword">this</span>.startTimeNanos = System.nanoTime();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><strong>初始化应用上下文和异常报告集合</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ConfigurableApplicationContext context = <span class="keyword">null</span>;</span><br><span class="line">Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><strong>设置系统属性java.awt.headless的值</strong></li>
+</ol>
+<p>java.awt.headless模式是在缺少显示器、键盘或者鼠标的系统配置时起作用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">configureHeadlessProperty();</span><br><span class="line"><span class="comment">//详细源代码</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">configureHeadlessProperty</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   System.setProperty(SYSTEM_PROPERTY_JAVA_AWT_HEADLESS,</span><br><span class="line">         System.getProperty(SYSTEM_PROPERTY_JAVA_AWT_HEADLESS, Boolean.toString(<span class="keyword">this</span>.headless)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li><strong>创建所有Spring运行监听器并发布应用启动事件</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">listeners.starting();</span><br><span class="line"><span class="comment">//详细源代码</span></span><br><span class="line"><span class="comment">//创建spring监听器</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> SpringApplicationRunListeners <span class="title">getRunListeners</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		Class&lt;?&gt;[] types = new Class&lt;?&gt;[] &#123; SpringApplication.class, String[].class &#125;;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> SpringApplicationRunListeners(logger,</span><br><span class="line">				getSpringFactoriesInstances(SpringApplicationRunListener<span class="class">.<span class="keyword">class</span>, <span class="title">types</span>, <span class="title">this</span>, <span class="title">args</span>))</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">SpringApplicationRunListeners(Log log, Collection&lt;? extends 	          SpringApplicationRunListener&gt; listeners) &#123;</span><br><span class="line">		<span class="keyword">this</span>.log = log;</span><br><span class="line">		<span class="keyword">this</span>.listeners = <span class="keyword">new</span> ArrayList&lt;&gt;(listeners);</span><br><span class="line">	&#125;</span><br><span class="line"><span class="comment">//循环遍历获取监听器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">starting</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">for</span> (SpringApplicationRunListener listener : <span class="keyword">this</span>.listeners) &#123;</span><br><span class="line">			listener.starting();</span><br><span class="line">		&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//此处监听器可以看出是事件发布监听器，主要用来发布启动时间</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">starting</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 这里创建Application事件：ApplicationStartingEvent</span></span><br><span class="line">		<span class="keyword">this</span>.initialMulticaster.multicastEvent(<span class="keyword">new</span> ApplicationStartingEvent(<span class="keyword">this</span>.application, <span class="keyword">this</span>.args));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//ApplicationStartingEvent是springboot框架最早执行的监听器，在该监听器执行started方法时</span></span><br><span class="line"><span class="comment">//会继续发布事件，主要是基于spring的事件机制。</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">multicastEvent</span><span class="params">(<span class="keyword">final</span> ApplicationEvent event, @Nullable    ResolvableType eventType)</span> </span>&#123;</span><br><span class="line">		ResolvableType type = (eventType != <span class="keyword">null</span> ? eventType :    resolveDefaultEventType(event));</span><br><span class="line">    <span class="comment">// 获取线程池，如果为空，则同步处理。这里线程池为null,还未初始化</span></span><br><span class="line">		Executor executor = getTaskExecutor();</span><br><span class="line">		<span class="keyword">for</span> (ApplicationListener&lt;?&gt; listener : getApplicationListeners(event, type)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (executor != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="comment">//异步发送事件</span></span><br><span class="line">				executor.execute(() -&gt; invokeListener(listener, event));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//同步发送事件</span></span><br><span class="line">				invokeListener(listener, event);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li><strong>初始化默认应用参数类</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ApplicationArguments applicationArguments = <span class="keyword">new</span> DefaultApplicationArguments(args);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DefaultApplicationArguments</span><span class="params">(String... args)</span> </span>&#123;</span><br><span class="line">    Assert.notNull(args, <span class="string">"Args must not be null"</span>);</span><br><span class="line">    <span class="keyword">this</span>.source = <span class="keyword">new</span> Source(args);</span><br><span class="line">    <span class="keyword">this</span>.args = args;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="6">
+<li><strong>根据运行监听器和应用参数来准备spring环境</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);</span><br><span class="line"></span><br><span class="line"><span class="comment">//详细源代码</span></span><br><span class="line"><span class="comment">//详细环境的准备</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> ConfigurableEnvironment <span class="title">prepareEnvironment</span><span class="params">(SpringApplicationRunListeners listeners,ApplicationArguments applicationArguments)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Create and configure the environment</span></span><br><span class="line">    <span class="comment">// 6.1. 获取或者创建应用环境</span></span><br><span class="line">    ConfigurableEnvironment environment = getOrCreateEnvironment();</span><br><span class="line">    <span class="comment">// 6.2 配置应用环境，配置propertySource和activeProfiles</span></span><br><span class="line">    configureEnvironment(environment, applicationArguments.getSourceArgs());</span><br><span class="line">    <span class="comment">// 6.3 listeners环境准备，广播applicationEnvironmentPreparedEvent</span></span><br><span class="line">    ConfigurationPropertySources.attach(environment);</span><br><span class="line">    <span class="comment">//从11个里面找出来applicationEnvironmentPreparedEvent类型的listener</span></span><br><span class="line">    listeners.environmentPrepared(environment);</span><br><span class="line">    <span class="comment">// 6.4 将环境绑定给当前应用程序</span></span><br><span class="line">    bindToSpringApplication(environment);</span><br><span class="line">    <span class="comment">// 6.5 对当前的环境类型进行判断，如果不一致进行转换</span></span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.isCustomEnvironment) &#123;</span><br><span class="line">        environment = <span class="keyword">new</span> EnvironmentConverter(getClassLoader()).convertEnvironmentIfNecessary(environment,                                                            deduceEnvironmentClass());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 6.6 配置propertySource对它自己的递归依赖</span></span><br><span class="line">    ConfigurationPropertySources.attach(environment);</span><br><span class="line">    <span class="keyword">return</span> environment;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​                6.1 获取或者创建应用环境，根据应用程序的类型分为servlet环境、标准环境和响应式环境。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> ConfigurableEnvironment <span class="title">getOrCreateEnvironment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//存在则直接返回</span></span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.environment != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">this</span>.environment;</span><br><span class="line">   &#125;</span><br><span class="line">    <span class="comment">//根据webApplicationType创建对应的Environment</span></span><br><span class="line">   <span class="keyword">switch</span> (<span class="keyword">this</span>.webApplicationType) &#123;</span><br><span class="line">   <span class="keyword">case</span> SERVLET:</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> StandardServletEnvironment();</span><br><span class="line">   <span class="keyword">case</span> REACTIVE:</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> StandardReactiveWebEnvironment();</span><br><span class="line">   <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> StandardEnvironment();</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<pre><code>6.2 配置应用环境</code></pre><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configureEnvironment</span><span class="params">(ConfigurableEnvironment environment, String[] args)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.addConversionService) &#123;</span><br><span class="line">      ConversionService conversionService = ApplicationConversionService.getSharedInstance();</span><br><span class="line">      environment.setConversionService((ConfigurableConversionService) conversionService);</span><br><span class="line">   &#125;</span><br><span class="line">    <span class="comment">//配置property sources</span></span><br><span class="line">   configurePropertySources(environment, args);</span><br><span class="line">    <span class="comment">//配置profiles，指定配置文件，测试环境、生产环境等 spring.atcive.profile。</span></span><br><span class="line">   configureProfiles(environment, args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="7">
+<li><strong>创建banner的打印类</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//打印类的详细操作过程</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> Banner <span class="title">printBanner</span><span class="params">(ConfigurableEnvironment environment)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.bannerMode == Banner.Mode.OFF) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">   &#125;</span><br><span class="line">   ResourceLoader resourceLoader = (<span class="keyword">this</span>.resourceLoader != <span class="keyword">null</span>) ? <span class="keyword">this</span>.resourceLoader</span><br><span class="line">         : <span class="keyword">new</span> DefaultResourceLoader(getClassLoader());</span><br><span class="line">   SpringApplicationBannerPrinter bannerPrinter = <span class="keyword">new</span> SpringApplicationBannerPrinter(resourceLoader, <span class="keyword">this</span>.banner);</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.bannerMode == Mode.LOG) &#123;</span><br><span class="line">      <span class="keyword">return</span> bannerPrinter.print(environment, <span class="keyword">this</span>.mainApplicationClass, logger);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> bannerPrinter.print(environment, <span class="keyword">this</span>.mainApplicationClass, System.out);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="8">
+<li><strong>创建应用的上下文</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//根据不同的应用类型初始化不同的上下文应用类</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> ConfigurableApplicationContext <span class="title">createApplicationContext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   Class&lt;?&gt; contextClass = <span class="keyword">this</span>.applicationContextClass;</span><br><span class="line">   <span class="keyword">if</span> (contextClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="keyword">switch</span> (<span class="keyword">this</span>.webApplicationType) &#123;</span><br><span class="line">         <span class="keyword">case</span> SERVLET:</span><br><span class="line">            contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">         <span class="keyword">case</span> REACTIVE:</span><br><span class="line">            contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">         <span class="keyword">default</span>:</span><br><span class="line">            contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">               <span class="string">"Unable create a default ApplicationContext, please specify an ApplicationContextClass"</span>, ex);</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="9">
+<li><strong>准备异常报告器</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;T&gt; <span class="function">Collection&lt;T&gt; <span class="title">getSpringFactoriesInstances</span><span class="params">(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes, Object... args)</span> </span>&#123;</span><br><span class="line">   ClassLoader classLoader = getClassLoader();</span><br><span class="line">   <span class="comment">// Use names and ensure unique to protect against duplicates</span></span><br><span class="line">   Set&lt;String&gt; names = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(SpringFactoriesLoader.loadFactoryNames(type, classLoader));</span><br><span class="line">   List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);</span><br><span class="line">   AnnotationAwareOrderComparator.sort(instances);</span><br><span class="line">   <span class="keyword">return</span> instances;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="10">
+<li><strong>准备应用上下文</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">prepareContext</span><span class="params">(ConfigurableApplicationContext context, ConfigurableEnvironment environment,</span></span></span><br><span class="line"><span class="function"><span class="params">      SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 应用上下文的environment</span></span><br><span class="line">   context.setEnvironment(environment);</span><br><span class="line">    <span class="comment">// 应用上下文后处理</span></span><br><span class="line">   postProcessApplicationContext(context);</span><br><span class="line">    <span class="comment">// 为上下文应用所有初始化器，执行容器中的applicationContextInitializer(sping.factories)实例</span></span><br><span class="line">    <span class="comment">//将所有初始化对象放置到context对象中</span></span><br><span class="line">   applyInitializers(context);</span><br><span class="line">    <span class="comment">//触发所有springApplicationRunListener监听器的contextPrepared事件方法。添加所有事件监听器</span></span><br><span class="line">   listeners.contextPrepared(context);</span><br><span class="line">    <span class="comment">// 记录启动日志</span></span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">      logStartupInfo(context.getParent() == <span class="keyword">null</span>);</span><br><span class="line">      logStartupProfileInfo(context);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment">// 注册启动参数bean，将容器指定的参数封装成bean，注入容器</span></span><br><span class="line">   ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();</span><br><span class="line">   beanFactory.registerSingleton(<span class="string">"springApplicationArguments"</span>, applicationArguments);</span><br><span class="line">  	<span class="comment">// 设置banner</span></span><br><span class="line">    <span class="keyword">if</span> (printedBanner != <span class="keyword">null</span>) &#123;</span><br><span class="line">      beanFactory.registerSingleton(<span class="string">"springBootBanner"</span>, printedBanner);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">if</span> (beanFactory <span class="keyword">instanceof</span> DefaultListableBeanFactory) &#123;</span><br><span class="line">      ((DefaultListableBeanFactory) beanFactory)</span><br><span class="line">            .setAllowBeanDefinitionOverriding(<span class="keyword">this</span>.allowBeanDefinitionOverriding);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.lazyInitialization) &#123;</span><br><span class="line">      context.addBeanFactoryPostProcessor(<span class="keyword">new</span> LazyInitializationBeanFactoryPostProcessor());</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment">// 加载所有资源，指的是启动器指定的参数</span></span><br><span class="line">   Set&lt;Object&gt; sources = getAllSources();</span><br><span class="line">   Assert.notEmpty(sources, <span class="string">"Sources must not be empty"</span>);</span><br><span class="line">    <span class="comment">//将bean加载到上下文中</span></span><br><span class="line">   load(context, sources.toArray(<span class="keyword">new</span> Object[<span class="number">0</span>]));</span><br><span class="line">    <span class="comment">// 触发所有springapplicaitonRunListener监听器的contextLoaded事件方法</span></span><br><span class="line">   listeners.contextLoaded(context);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">-----------------------------------------------------</span><br><span class="line">    <span class="comment">// 这里没有做任何的处理，因为beanNameGenerator和resourLoader默认为空，可以方便后续做扩展处理</span></span><br><span class="line">    	<span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">postProcessApplicationContext</span><span class="params">(ConfigurableApplicationContext context)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.beanNameGenerator != <span class="keyword">null</span>) &#123;</span><br><span class="line">			context.getBeanFactory().registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR,</span><br><span class="line">					<span class="keyword">this</span>.beanNameGenerator);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.resourceLoader != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (context <span class="keyword">instanceof</span> GenericApplicationContext) &#123;</span><br><span class="line">				((GenericApplicationContext) context).setResourceLoader(<span class="keyword">this</span>.resourceLoader);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (context <span class="keyword">instanceof</span> DefaultResourceLoader) &#123;</span><br><span class="line">				((DefaultResourceLoader) context).setClassLoader(<span class="keyword">this</span>.resourceLoader.getClassLoader());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.addConversionService) &#123;</span><br><span class="line">			context.getBeanFactory().setConversionService(ApplicationConversionService.getSharedInstance());</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">-----------------------------------------------------</span><br><span class="line">    <span class="comment">//将启动器类加载到spring容器中，为后续的自动化配置奠定基础，之前看到的很多注解也与此相关</span></span><br><span class="line">    	<span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">load</span><span class="params">(ApplicationContext context, Object[] sources)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">			logger.debug(<span class="string">"Loading source "</span> + StringUtils.arrayToCommaDelimitedString(sources));</span><br><span class="line">		&#125;</span><br><span class="line">		BeanDefinitionLoader loader = createBeanDefinitionLoader(getBeanDefinitionRegistry(context), sources);</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.beanNameGenerator != <span class="keyword">null</span>) &#123;</span><br><span class="line">			loader.setBeanNameGenerator(<span class="keyword">this</span>.beanNameGenerator);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.resourceLoader != <span class="keyword">null</span>) &#123;</span><br><span class="line">			loader.setResourceLoader(<span class="keyword">this</span>.resourceLoader);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.environment != <span class="keyword">null</span>) &#123;</span><br><span class="line">			loader.setEnvironment(<span class="keyword">this</span>.environment);</span><br><span class="line">		&#125;</span><br><span class="line">		loader.load();</span><br><span class="line">	&#125;</span><br><span class="line"><span class="comment">//springboot会优先选择groovy加载方式，找不到再选择java方式。</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">load</span><span class="params">(Class&lt;?&gt; source)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (isGroovyPresent() &amp;&amp; GroovyBeanDefinitionSource<span class="class">.<span class="keyword">class</span>.<span class="title">isAssignableFrom</span>(<span class="title">source</span>)) </span>&#123;</span><br><span class="line">        <span class="comment">// Any GroovyLoaders added in beans&#123;&#125; DSL can contribute beans here</span></span><br><span class="line">        GroovyBeanDefinitionSource loader = BeanUtils.instantiateClass(source, GroovyBeanDefinitionSource<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        load(loader);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (isComponent(source)) &#123;</span><br><span class="line">        <span class="keyword">this</span>.annotatedReader.register(source);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="11">
+<li><strong>刷新应用上下文</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">refreshContext</span><span class="params">(ConfigurableApplicationContext context)</span> </span>&#123;</span><br><span class="line">   refresh(context);</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.registerShutdownHook) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">         context.registerShutdownHook();</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> (AccessControlException ex) &#123;</span><br><span class="line">         <span class="comment">// Not allowed in some environments.</span></span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//这里refresh方法，就和我们在分析spring源码时一样。</span></span><br><span class="line">-------------------------------------------------</span><br><span class="line">  	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException </span>&#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (<span class="keyword">this</span>.startupShutdownMonitor) &#123;</span><br><span class="line">			<span class="comment">// 刷新上下文环境，初始化上下文环境，</span></span><br><span class="line">            <span class="comment">//对系统的环境变量或者系统属性进行准备和校验</span></span><br><span class="line">			prepareRefresh();</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 初始化beanFactory，loadBeanDefinitions解析xml</span></span><br><span class="line">			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 为上下文准备beanFactory，对beanFactory的各种功能进行填充</span></span><br><span class="line">            <span class="comment">// 如@autowired,设置spel表达式解析器、设置编辑注册器、添加applicationContextAwareprocessor处理器等等</span></span><br><span class="line">			prepareBeanFactory(beanFactory);</span><br><span class="line"></span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				<span class="comment">// 提供子类覆盖的额外处理，即子类处理自定义的beanFactoryPostProcess</span></span><br><span class="line">				postProcessBeanFactory(beanFactory);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 激活各种beanFactoryPostProcessor</span></span><br><span class="line">				invokeBeanFactoryPostProcessors(beanFactory);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 注册拦截bean创建的bean处理器，即注册beanPostProcessor</span></span><br><span class="line">				registerBeanPostProcessors(beanFactory);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 初始化上下文中的资源文件如国际化文件的处理</span></span><br><span class="line">				initMessageSource();</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 初始化上下文事件和广播器</span></span><br><span class="line">				initApplicationEventMulticaster();</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 给子类扩展初始化其他bean</span></span><br><span class="line">				onRefresh();</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 在所有bean中查找listener bean，然后注册到广播器中</span></span><br><span class="line">				registerListeners();</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 初始化剩余的非懒加载bean，即初始化非延迟加载的bean</span></span><br><span class="line">				finishBeanFactoryInitialization(beanFactory);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 完成刷新过程，通知生命周期处理器刷新过程，同时发出ContextRefreshEvent通知别人</span></span><br><span class="line">				finishRefresh();</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">catch</span> (BeansException ex) &#123;</span><br><span class="line">				<span class="keyword">if</span> (logger.isWarnEnabled()) &#123;</span><br><span class="line">					logger.warn(<span class="string">"Exception encountered during context initialization - "</span> +</span><br><span class="line">							<span class="string">"cancelling refresh attempt: "</span> + ex);</span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="comment">// Destroy already created singletons to avoid dangling resources.</span></span><br><span class="line">				destroyBeans();</span><br><span class="line"></span><br><span class="line">				<span class="comment">// Reset 'active' flag.</span></span><br><span class="line">				cancelRefresh(ex);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// Propagate exception to caller.</span></span><br><span class="line">				<span class="keyword">throw</span> ex;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">finally</span> &#123;</span><br><span class="line">				<span class="comment">// Reset common introspection caches in Spring's core, since we</span></span><br><span class="line">				<span class="comment">// might not ever need metadata for singleton beans anymore...</span></span><br><span class="line">				resetCommonCaches();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="12">
+<li><strong>应用上下文刷新后置处理</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当前方法的代码是空的，可以做一些自定义的后置处理操作</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">afterRefresh</span><span class="params">(ConfigurableApplicationContext context, ApplicationArguments args)</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="13">
+<li><strong>停止计时监控类：计时监听器停止，并统计一些任务执行信息</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> <span class="keyword">throws</span> IllegalStateException </span>&#123;</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.currentTaskName == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Can't stop StopWatch: it's not running"</span>);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">long</span> lastTime = System.nanoTime() - <span class="keyword">this</span>.startTimeNanos;</span><br><span class="line">   <span class="keyword">this</span>.totalTimeNanos += lastTime;</span><br><span class="line">   <span class="keyword">this</span>.lastTaskInfo = <span class="keyword">new</span> TaskInfo(<span class="keyword">this</span>.currentTaskName, lastTime);</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">this</span>.keepTaskList) &#123;</span><br><span class="line">      <span class="keyword">this</span>.taskList.add(<span class="keyword">this</span>.lastTaskInfo);</span><br><span class="line">   &#125;</span><br><span class="line">   ++<span class="keyword">this</span>.taskCount;</span><br><span class="line">   <span class="keyword">this</span>.currentTaskName = <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="14">
+<li><strong>输出日志记录执行主类名、时间信息</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">   <span class="keyword">new</span> StartupInfoLogger(<span class="keyword">this</span>.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="15">
+<li><strong>发布应用上下文启动完成事件：触发所有SpingApplicationRunListener监听器的started事件方法</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">started</span><span class="params">(ConfigurableApplicationContext context)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (SpringApplicationRunListener listener : <span class="keyword">this</span>.listeners) &#123;</span><br><span class="line">      listener.started(context);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="16">
+<li><strong>执行所有Runner执行器：执行所有applicationRuner和CommandLineRunner两种运行器</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">callRunners</span><span class="params">(ApplicationContext context, ApplicationArguments args)</span> </span>&#123;</span><br><span class="line">   List&lt;Object&gt; runners = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">   runners.addAll(context.getBeansOfType(ApplicationRunner<span class="class">.<span class="keyword">class</span>).<span class="title">values</span>())</span>;</span><br><span class="line">   runners.addAll(context.getBeansOfType(CommandLineRunner<span class="class">.<span class="keyword">class</span>).<span class="title">values</span>())</span>;</span><br><span class="line">   AnnotationAwareOrderComparator.sort(runners);</span><br><span class="line">   <span class="keyword">for</span> (Object runner : <span class="keyword">new</span> LinkedHashSet&lt;&gt;(runners)) &#123;</span><br><span class="line">      <span class="keyword">if</span> (runner <span class="keyword">instanceof</span> ApplicationRunner) &#123;</span><br><span class="line">         callRunner((ApplicationRunner) runner, args);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (runner <span class="keyword">instanceof</span> CommandLineRunner) &#123;</span><br><span class="line">         callRunner((CommandLineRunner) runner, args);</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="17">
+<li><strong>发布应用上下文就绪事件：触发所有springApplicationRunListener监听器的running事件方法</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">running</span><span class="params">(ConfigurableApplicationContext context)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">for</span> (SpringApplicationRunListener listener : <span class="keyword">this</span>.listeners) &#123;</span><br><span class="line">      listener.running(context);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="18">
+<li><strong>返回应用上下文</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> context;</span><br></pre></td></tr></table></figure>
+
+<h3 id="获取factories文件"><a href="#获取factories文件" class="headerlink" title="获取factories文件"></a>获取factories文件</h3><p>整个spingboot框架获取factories文件的方式统一如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;T&gt; <span class="function">Collection&lt;T&gt; <span class="title">getSpringFactoriesInstances</span><span class="params">(Class&lt;T&gt; type)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">return</span> getSpringFactoriesInstances(type, <span class="keyword">new</span> Class&lt;?&gt;[] &#123;&#125;);</span><br><span class="line">&#125;</span><br><span class="line">-------------------------------------</span><br><span class="line"><span class="keyword">private</span> &lt;T&gt; <span class="function">Collection&lt;T&gt; <span class="title">getSpringFactoriesInstances</span><span class="params">(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes, Object... args)</span> </span>&#123;</span><br><span class="line">   ClassLoader classLoader = getClassLoader();</span><br><span class="line">   <span class="comment">// Use names and ensure unique to protect against duplicates</span></span><br><span class="line">   Set&lt;String&gt; names = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(SpringFactoriesLoader.loadFactoryNames(type, classLoader));</span><br><span class="line">   List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);</span><br><span class="line">   AnnotationAwareOrderComparator.sort(instances);</span><br><span class="line">   <span class="keyword">return</span> instances;</span><br><span class="line">&#125;</span><br><span class="line">-------------------------------------</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;String&gt; <span class="title">loadFactoryNames</span><span class="params">(Class&lt;?&gt; factoryType, @Nullable ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">    String factoryTypeName = factoryType.getName();</span><br><span class="line">    <span class="keyword">return</span> loadSpringFactories(classLoader).getOrDefault(factoryTypeName, Collections.emptyList());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> Map&lt;String, List&lt;String&gt;&gt; loadSpringFactories(<span class="meta">@Nullable</span> ClassLoader classLoader) &#123;</span><br><span class="line">    MultiValueMap&lt;String, String&gt; result = cache.get(classLoader);</span><br><span class="line">    <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Enumeration&lt;URL&gt; urls = (classLoader != <span class="keyword">null</span> ?</span><br><span class="line">                                 classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :</span><br><span class="line">                                 ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));</span><br><span class="line">        result = <span class="keyword">new</span> LinkedMultiValueMap&lt;&gt;();</span><br><span class="line">        <span class="keyword">while</span> (urls.hasMoreElements()) &#123;</span><br><span class="line">            URL url = urls.nextElement();</span><br><span class="line">            UrlResource resource = <span class="keyword">new</span> UrlResource(url);</span><br><span class="line">            Properties properties = PropertiesLoaderUtils.loadProperties(resource);</span><br><span class="line">            <span class="keyword">for</span> (Map.Entry&lt;?, ?&gt; entry : properties.entrySet()) &#123;</span><br><span class="line">                String factoryTypeName = ((String) entry.getKey()).trim();</span><br><span class="line">                <span class="keyword">for</span> (String factoryImplementationName : StringUtils.commaDelimitedListToStringArray((String) entry.getValue())) &#123;</span><br><span class="line">                    result.add(factoryTypeName, factoryImplementationName.trim());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        cache.put(classLoader, result);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Unable to load factories from location ["</span> +</span><br><span class="line">                                           FACTORIES_RESOURCE_LOCATION + <span class="string">"]"</span>, ex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">-------------------------------------</span><br><span class="line">    <span class="keyword">private</span> &lt;T&gt; <span class="function">List&lt;T&gt; <span class="title">createSpringFactoriesInstances</span><span class="params">(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                       ClassLoader classLoader, Object[] args, Set&lt;String&gt; names)</span> </span>&#123;</span><br><span class="line">    List&lt;T&gt; instances = <span class="keyword">new</span> ArrayList&lt;&gt;(names.size());</span><br><span class="line">    <span class="keyword">for</span> (String name : names) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//装载class文件到内存</span></span><br><span class="line">            Class&lt;?&gt; instanceClass = ClassUtils.forName(name, classLoader);</span><br><span class="line">            Assert.isAssignable(type, instanceClass);</span><br><span class="line">            Constructor&lt;?&gt; constructor = instanceClass.getDeclaredConstructor(parameterTypes);</span><br><span class="line">            <span class="comment">//通过反射创建实例</span></span><br><span class="line">            T instance = (T) BeanUtils.instantiateClass(constructor, args);</span><br><span class="line">            instances.add(instance);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Cannot instantiate "</span> + type + <span class="string">" : "</span> + name, ex);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> instances;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>spring.factory文件中的类的作用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br></pre></td><td class="code"><pre><span class="line"># PropertySource Loaders 属性文件加载器</span><br><span class="line">org.springframework.boot.env.PropertySourceLoader=\</span><br><span class="line"># properties文件加载器</span><br><span class="line">org.springframework.boot.env.PropertiesPropertySourceLoader,\</span><br><span class="line"># yaml文件加载器</span><br><span class="line">org.springframework.boot.env.YamlPropertySourceLoader</span><br><span class="line"></span><br><span class="line"># Run Listeners 运行时的监听器</span><br><span class="line">org.springframework.boot.SpringApplicationRunListener=\</span><br><span class="line"># 程序运行过程中所有监听通知都是通过此类来进行回调</span><br><span class="line">org.springframework.boot.context.event.EventPublishingRunListener</span><br><span class="line"></span><br><span class="line"># Error Reporters	错误报告器</span><br><span class="line">org.springframework.boot.SpringBootExceptionReporter=\</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalyzers</span><br><span class="line"></span><br><span class="line"># Application Context Initializers</span><br><span class="line">org.springframework.context.ApplicationContextInitializer=\</span><br><span class="line"># 报告spring容器的一些常见的错误配置</span><br><span class="line">org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer,\</span><br><span class="line"># 设置spring应用上下文的ID</span><br><span class="line">org.springframework.boot.context.ContextIdApplicationContextInitializer,\</span><br><span class="line"># 使用环境属性context.initializer.classes指定初始化器进行初始化规则</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.rsocket.context.RSocketPortInfoApplicationContextInitializer,\</span><br><span class="line"># 将内置servlet容器实际使用的监听端口写入到environment环境属性中</span><br><span class="line">org.springframework.boot.web.context.ServerPortInfoApplicationContextInitializer</span><br><span class="line"></span><br><span class="line"># Application Listeners</span><br><span class="line">org.springframework.context.ApplicationListener=\</span><br><span class="line"># 应用上下文加载完成后对缓存做清除工作，响应事件ContextRefreshEvent</span><br><span class="line">org.springframework.boot.ClearCachesApplicationListener,\</span><br><span class="line"># 监听双亲应用上下文的关闭事件并往自己的孩子应用上下文中传播，相关事件ParentContextAvailableEvent/ContextClosedEvent</span><br><span class="line">org.springframework.boot.builder.ParentContextCloserApplicationListener,\</span><br><span class="line">org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\</span><br><span class="line"># 如果系统文件编码和环境变量中指定的不同则终止应用启动。具体的方法是比较系统属性file.encoding和环境变量spring.mandatory-file-encoding是否相等(大小写不敏感)。</span><br><span class="line">org.springframework.boot.context.FileEncodingApplicationListener,\</span><br><span class="line"># 根据spring.output.ansi.enabled参数配置AnsiOutput</span><br><span class="line">org.springframework.boot.context.config.AnsiOutputApplicationListener,\</span><br><span class="line"># EnvironmentPostProcessor，从常见的那些约定的位置读取配置文件，比如从以下目录读取#application.properties,application.yml等配置文件：</span><br><span class="line"># classpath:</span><br><span class="line"># file:.</span><br><span class="line"># classpath:config</span><br><span class="line"># file:./config/:</span><br><span class="line"># 也可以配置成从其他指定的位置读取配置文件</span><br><span class="line">org.springframework.boot.context.config.ConfigFileApplicationListener,\</span><br><span class="line"># 监听到事件后转发给环境变量context.listener.classes指定的那些事件监听器</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationListener,\</span><br><span class="line"># 一个SmartApplicationListener,对环境就绪事件ApplicationEnvironmentPreparedEvent/应用失败事件ApplicationFailedEvent做出响应，往日志DEBUG级别输出TCCL(thread context class loader)的classpath。</span><br><span class="line">org.springframework.boot.context.logging.ClasspathLoggingApplicationListener,\</span><br><span class="line"># 检测正在使用的日志系统，默认时logback，，此时日志系统还没有初始化</span><br><span class="line">org.springframework.boot.context.logging.LoggingApplicationListener,\</span><br><span class="line"># 使用一个可以和Spring Boot可执行jar包配合工作的版本替换liquibase ServiceLocator</span><br><span class="line">org.springframework.boot.liquibase.LiquibaseServiceLocatorApplicationListener</span><br><span class="line"></span><br><span class="line"># Environment Post Processors</span><br><span class="line">org.springframework.boot.env.EnvironmentPostProcessor=\</span><br><span class="line">org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\</span><br><span class="line">org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor,\</span><br><span class="line">org.springframework.boot.env.SystemEnvironmentPropertySourceEnvironmentPostProcessor,\</span><br><span class="line">org.springframework.boot.reactor.DebugAgentEnvironmentPostProcessor</span><br><span class="line"></span><br><span class="line"># Failure Analyzers</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalyzer=\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanDefinitionOverrideFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanNotOfRequiredTypeFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BindFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BindValidationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.UnboundConfigurationPropertyFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ConnectorStartFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ValidationExceptionFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyNameFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer</span><br><span class="line"></span><br><span class="line"># FailureAnalysisReporters</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalysisReporter=\</span><br><span class="line">org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter</span><br><span class="line"></span><br><span class="line"># Initializers</span><br><span class="line">org.springframework.context.ApplicationContextInitializer=\</span><br><span class="line">org.springframework.boot.autoconfigure.SharedMetadataReaderFactoryContextInitializer,\</span><br><span class="line">org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener</span><br><span class="line"></span><br><span class="line"># Application Listeners</span><br><span class="line">org.springframework.context.ApplicationListener=\</span><br><span class="line"># 另外单独启动一个线程实例化并调用run方法，包括验证器、消息转换器等</span><br><span class="line">org.springframework.boot.autoconfigure.BackgroundPreinitializer</span><br><span class="line"></span><br><span class="line"># Auto Configuration Import Listeners</span><br><span class="line">org.springframework.boot.autoconfigure.AutoConfigurationImportListener=\</span><br><span class="line">org.springframework.boot.autoconfigure.condition.ConditionEvaluationReportAutoConfigurationImportListener</span><br><span class="line"></span><br><span class="line"># Auto Configuration Import Filters</span><br><span class="line">org.springframework.boot.autoconfigure.AutoConfigurationImportFilter=\</span><br><span class="line">org.springframework.boot.autoconfigure.condition.OnBeanCondition,\</span><br><span class="line">org.springframework.boot.autoconfigure.condition.OnClassCondition,\</span><br><span class="line">org.springframework.boot.autoconfigure.condition.OnWebApplicationCondition</span><br><span class="line"></span><br><span class="line"># Auto Configure</span><br><span class="line">org.springframework.boot.autoconfigure.EnableAutoConfiguration=\</span><br><span class="line">org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.cloud.CloudServiceConnectorsAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.dao.PersistenceExceptionTranslationAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.couchbase.CouchbaseRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveRestClientAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.mongo.MongoReactiveRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.neo4j.Neo4jRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.solr.SolrRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.elasticsearch.jest.JestAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.hateoas.HypermediaAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.hazelcast.HazelcastAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.hazelcast.HazelcastJpaDependencyAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.influx.InfluxDbAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.info.ProjectInfoAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.integration.IntegrationAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.JndiDataSourceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.XADataSourceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jms.JmsAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jms.JndiConnectionFactoryAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jersey.JerseyAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.jsonb.JsonbAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mail.MailSenderValidatorAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.rsocket.RSocketMessagingAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.rsocket.RSocketRequesterAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.rsocket.RSocketServerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.rsocket.RSocketStrategiesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.rsocket.RSocketSecurityAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.saml2.Saml2RelyingPartyAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.sendgrid.SendGridAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.session.SessionAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.transaction.jta.JtaAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.client.RestTemplateAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.embedded.EmbeddedWebServerFactoryCustomizerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.HttpHandlerAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.ReactiveWebServerFactoryAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.function.client.ClientHttpConnectorAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.HttpEncodingAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.websocket.reactive.WebSocketReactiveAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.websocket.servlet.WebSocketMessagingAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.webservices.WebServicesAutoConfiguration,\</span><br><span class="line">org.springframework.boot.autoconfigure.webservices.client.WebServiceTemplateAutoConfiguration</span><br><span class="line"></span><br><span class="line"># Failure analyzers</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalyzer=\</span><br><span class="line">org.springframework.boot.autoconfigure.diagnostics.analyzer.NoSuchBeanDefinitionFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.autoconfigure.flyway.FlywayMigrationScriptMissingFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.DataSourceBeanCreationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.autoconfigure.jdbc.HikariDriverConfigurationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.autoconfigure.session.NonUniqueSessionRepositoryFailureAnalyzer</span><br><span class="line"></span><br><span class="line"># Template availability providers</span><br><span class="line">org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvider=\</span><br><span class="line">org.springframework.boot.autoconfigure.freemarker.FreeMarkerTemplateAvailabilityProvider,\</span><br><span class="line">org.springframework.boot.autoconfigure.mustache.MustacheTemplateAvailabilityProvider,\</span><br><span class="line">org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAvailabilityProvider,\</span><br><span class="line">org.springframework.boot.autoconfigure.thymeleaf.ThymeleafTemplateAvailabilityProvider,\</span><br><span class="line">org.springframework.boot.autoconfigure.web.servlet.JspTemplateAvailabilityProvider</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/SpringBoot/" rel="tag"># SpringBoot</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/15/spi/" rel="prev" title="Java基础之SPI机制">
+      <i class="fa fa-chevron-left"></i> Java基础之SPI机制
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SpringBoot的入口"><span class="nav-number">1.</span> <span class="nav-text">SpringBoot的入口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SpringApplication的构造方法"><span class="nav-number">1.1.</span> <span class="nav-text">SpringApplication的构造方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Run方法"><span class="nav-number">1.2.</span> <span class="nav-text">Run方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取factories文件"><span class="nav-number">1.3.</span> <span class="nav-text">获取factories文件</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">47</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">336k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">5:05</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
