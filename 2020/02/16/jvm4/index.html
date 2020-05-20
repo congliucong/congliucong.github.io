@@ -36,7 +36,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/02/16/jvm4/classLoader.jpg">
 <meta property="og:image" content="http://yoursite.com/2020/02/16/jvm4/image-20200503184832674.png">
 <meta property="article:published_time" content="2020-02-16T06:45:11.000Z">
-<meta property="article:modified_time" content="2020-05-06T11:59:13.275Z">
+<meta property="article:modified_time" content="2020-05-20T14:42:55.644Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
@@ -339,7 +339,7 @@
 <li>将字节流所代表的静态存储结构转化为方法区的运行时数据接口</li>
 <li>在内存中生成一个代表这个类的class对象，作为方法区这个类的各种数据的访问入口</li>
 </ol>
-<p>用我自己理解话的就是，加载过程主要是把将编译后的class文件加载到内存中，然后在方法区生成运行时数据结构，随后内存中生成一个class对象，通过这个对象可以访问方法区的数据结构。</p>
+<p>用我自己理解话的就是，<strong>加载过程主要是把将编译后的class文件加载到内存中，然后在方法区生成运行时数据结构，随后内存中生成一个class对象，通过这个对象可以访问方法区的数据结构</strong>。</p>
 <h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><p>验证是连接阶段的第一部，这一阶段的目的是确保class文件中的字节流包含的信息符合《Java虚拟机规范》的全部约束要求，保证这些信息被当做代码运行后不会危害虚拟机自身的安全。大白话讲就是检查加载进来的二进制字节流符不符合JVM的要求。主要有四个阶段的校验动作：</p>
 <ol>
 <li>文件格式验证，比如字节流是不是以0xCAFEBABE开头、版本号是不是在JVM的接受范围之内等等</li>

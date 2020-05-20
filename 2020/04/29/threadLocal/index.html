@@ -41,7 +41,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/04/29/threadLocal/image-20200430183644805.png">
 <meta property="og:image" content="http://yoursite.com/2020/04/29/threadLocal/image-20200430191245511.png">
 <meta property="article:published_time" content="2020-04-29T12:28:31.000Z">
-<meta property="article:modified_time" content="2020-04-30T12:00:02.492Z">
+<meta property="article:modified_time" content="2020-05-20T13:47:32.656Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
@@ -391,7 +391,7 @@
 <p>从插入位置开始为起点，开始查找脏entry，刚开始查找次数是 log2(size)，如果整个过程没有脏entry，那么就退出循环。<br>如果找到脏entry，那么就调用expungeStaleEntry清除脏entry，并且返回下一个元素null的位置i，作为搜索起点，将n重置为数组长度，再次扩大搜索范围继续查找脏entry。</p>
 <p>我们以下图为例，来说明这个过程<br><img src="/2020/04/29/threadLocal/1588218325.jpg" alt="https://www.jianshu.com/p/dde92ec37bd1"></p>
 <ol>
-<li>如果所示，当前插入元素在index 为 1 的位置，size 等于已插入元素10，第一趟搜索过程中 i = nextIndex(i, len);所以i为2，此时table[2]为null，所以第一趟没有发现脏entry，跳出expungeStaleEntry方法，返回i 等于2。</li>
+<li>如果所示，当前插入元素在index 为 1 的位置，size 等于已插入元素10，第一趟搜索过程中 i = nextIndex(i, len);所以i为2，此时table[2]为null，则第一趟结束进行第二趟的搜索。</li>
 <li>第二趟i 指向3的位置，发现table[3] != null，但是entry的key为null，所以是脏entry，因此，将n重置为数组长度，然后调用 expungeStaleEntry方法清除该元素。expungeStaleEntry方法会先将i为3的元素请出，然后从i等于3的位置开始继续向后环形搜索，i 等于 4，5都为脏entry，清除后继续，到i = 6，不是脏元素向后，当i =7后，此处元素为null，因此返回7。</li>
 <li>cleanSomeSlots方法则从7处开始继续扩大搜索范围（n变成数组长度）继续向后环形搜索。直到所有元素都不为脏entry，然后结束退出。</li>
 </ol>
