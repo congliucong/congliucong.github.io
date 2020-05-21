@@ -495,7 +495,7 @@ staleSlot是上面方法传入的脏元素的下标。
 我们以下图为例，来说明这个过程
 ![https://www.jianshu.com/p/dde92ec37bd1](threadLocal/1588218325.jpg)
 
-1. 如果所示，当前插入元素在index 为 1 的位置，size 等于已插入元素10，第一趟搜索过程中 i = nextIndex(i, len);所以i为2，此时table[2]为null，所以第一趟没有发现脏entry，跳出expungeStaleEntry方法，返回i 等于2。
+1. 如果所示，当前插入元素在index 为 1 的位置，size 等于已插入元素10，第一趟搜索过程中 i = nextIndex(i, len);所以i为2，此时table[2]为null，则第一趟结束进行第二趟的搜索。
 2. 第二趟i 指向3的位置，发现table[3] != null，但是entry的key为null，所以是脏entry，因此，将n重置为数组长度，然后调用 expungeStaleEntry方法清除该元素。expungeStaleEntry方法会先将i为3的元素请出，然后从i等于3的位置开始继续向后环形搜索，i 等于 4，5都为脏entry，清除后继续，到i = 6，不是脏元素向后，当i =7后，此处元素为null，因此返回7。
 3. cleanSomeSlots方法则从7处开始继续扩大搜索范围（n变成数组长度）继续向后环形搜索。直到所有元素都不为脏entry，然后结束退出。
 
