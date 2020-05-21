@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="这篇文章，主要的分布式锁相关知识体系进行总结。因为啥呢，Redis不仅是最常用的中间件，也是面试高频话题。谈到Redis，绕不开的必然是分布式锁。这篇文章主要关注点由单点Redis实现分布式锁，延伸到集群Redis实现分布式锁，再到Zookeeper实现分布式锁，以及对Redisson的部分源码解析。还是那句话，把知识由点总结成面，加深理解，让各个知识点不再是一个个孤岛。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式之Redis分布式锁">
+<meta property="og:url" content="http://yoursite.com/2020/04/19/distributed-redisLock/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="这篇文章，主要的分布式锁相关知识体系进行总结。因为啥呢，Redis不仅是最常用的中间件，也是面试高频话题。谈到Redis，绕不开的必然是分布式锁。这篇文章主要关注点由单点Redis实现分布式锁，延伸到集群Redis实现分布式锁，再到Zookeeper实现分布式锁，以及对Redisson的部分源码解析。还是那句话，把知识由点总结成面，加深理解，让各个知识点不再是一个个孤岛。">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/redisson.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/code.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock1.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock2.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock3.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock5.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock6.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock7.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock8.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/lock4.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/hincrby.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420203418581.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420205603185.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420210256359.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420211834782.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420220032018.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420220543692.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420221703803.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420222956200.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420231652538.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/sheel-1587395249473.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420231420533.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420231954287.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/image-20200420232204108.png">
+<meta property="article:published_time" content="2020-04-19T13:21:17.000Z">
+<meta property="article:modified_time" content="2020-05-12T11:38:19.199Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="分布式锁">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/19/distributed-redisLock/redisson.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/04/19/distributed-redisLock/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>分布式之Redis分布式锁 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/19/distributed-redisLock/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式之Redis分布式锁
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-19 21:21:17" itemprop="dateCreated datePublished" datetime="2020-04-19T21:21:17+08:00">2020-04-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/19/distributed-redisLock/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/19/distributed-redisLock/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这篇文章，主要的分布式锁相关知识体系进行总结。因为啥呢，Redis不仅是最常用的中间件，也是面试高频话题。谈到Redis，绕不开的必然是分布式锁。这篇文章主要关注点由单点Redis实现分布式锁，延伸到集群Redis实现分布式锁，再到Zookeeper实现分布式锁，以及对Redisson的部分源码解析。还是那句话，把知识由点总结成面，加深理解，让各个知识点不再是一个个孤岛。</p>
+<a id="more"></a>
+
+<h2 id="Redis分布式锁"><a href="#Redis分布式锁" class="headerlink" title="Redis分布式锁"></a>Redis分布式锁</h2><h3 id="单点Redis分布式锁"><a href="#单点Redis分布式锁" class="headerlink" title="单点Redis分布式锁"></a>单点Redis分布式锁</h3><p>在单点部署的Redis中，如何使用Redis来作为分布式锁呢？关键点主要有三：</p>
+<ul>
+<li><p><strong>原子命令加锁</strong></p>
+<blockquote>
+<p>SET key random_value NX PX 30000</p>
+</blockquote>
+<p>NX:表示只有当要设置的 key值不存在时，才能Set成功。这样可以保证只有第一个用户能够成功设置锁。</p>
+<p>PX 30000: 表示该锁存活时间为30秒，即使没有主动释放锁，该锁在30秒后也会自动释放。</p>
+</li>
+<li><p><strong>设置value，要设置随机数</strong></p>
+</li>
+</ul>
+<p>为什么设置的value要是随机数？</p>
+<p>这是因为 释放锁的时候要检查key是否存在，如果存在还要进行value的比较，看这个value值是不是自己设的，一样才能释放锁，这样可以避免 A设置的锁却被B释放的情况。</p>
+<ul>
+<li><strong>释放锁要使用lua脚本</strong></li>
+</ul>
+<p>释放锁整个过程要 获取—&gt;判断—&gt;删除 三个步骤，这三个步骤不是原子性的，所以为了保障原子性，要是用lua脚本。</p>
+<p>但是，单点部署的Redis节点，当实例挂掉之后，Redis锁会全部失效，导致系统不可用。这个时候就需要Redis的集群方式部署实现Redis的高可用。</p>
+<h3 id="Redis集群"><a href="#Redis集群" class="headerlink" title="Redis集群"></a>Redis集群</h3><p>Redis实现集群有多种方案。例如 主从模式 哨兵模式 cluster模式 利用中间件代理等。这里只大概描述主要的集群方式，详细内容以后再用专门文章来描述Redis如何实现高可用。</p>
+<ul>
+<li>主从模式</li>
+</ul>
+<p>主从模式包括一个master和多个salve，客户端对master进行读写操作，对slave进行读操作。master写入的数据会自动同步给salve，但是主从模式最大的问题是 当主节点挂掉之后，需要手动切换salve为master，因此实际生产中很少用到。</p>
+<ul>
+<li>哨兵模式</li>
+</ul>
+<p>哨兵模式基于主从复制模式，多了哨兵来监控和自动进行故障迁移。该模式下，哨兵会监控主节点，当主节点异常时，会标记为主观下线或客观下线，并进行主从切换。因此可以保障高可用。</p>
+<ul>
+<li>cluster集群</li>
+</ul>
+<p>这是Redis官方推出的集群方案。保证了高并发，整个集群通过不同的槽位分担所有数据，不同的key会分发到不同的Redis。</p>
+<p>但是不管是什么集群方案，都会存在一种极端情况下的问题：<strong>当master节点上新加了锁，但是由于主从异步通信同步，数据还没有同步到slave上，此时master挂掉，master上的锁就会失效。等新的master重新设好之后，可以再次设置同样的锁，这样就会出现同一把锁设置两次的问题</strong>。一把锁，不管在什么情况下，只能保证设置一次，不然锁就失去了锁的意义。</p>
+<h3 id="Redlock算法"><a href="#Redlock算法" class="headerlink" title="Redlock算法"></a>Redlock算法</h3><p>为了解决集群下可能出现的问题，官方提出了RedLock算法。现在假设有5台Redis master节点。</p>
+<blockquote>
+<p>以下获取锁步骤来自<a href="http://redis.cn/topics/distlock.html" target="_blank" rel="noopener">http://redis.cn/topics/distlock.html</a></p>
+</blockquote>
+<ol>
+<li>获取当前Unix时间，以毫秒为单位。</li>
+<li>依次尝试从N个实例，使用相同的key和随机值获取锁。在步骤2，当向Redis设置锁时,客户端应该设置一个网络连接和响应超时时间，这个超时时间应该小于锁的失效时间。例如你的锁自动失效时间为10秒，则超时时间应该在5-50毫秒之间。这样可以避免服务器端Redis已经挂掉的情况下，客户端还在死死地等待响应结果。如果服务器端没有在规定时间内响应，客户端应该尽快尝试另外一个Redis实例。</li>
+<li>客户端使用当前时间减去开始获取锁时间（步骤1记录的时间）就得到获取锁使用的时间。当且仅当从大多数（这里是3个节点）的Redis节点都取到锁，并且使用的时间小于锁失效时间时，锁才算获取成功。</li>
+<li>如果取到了锁，key的真正有效时间等于有效时间减去获取锁所使用的时间（步骤3计算的结果）。<br>如果因为某些原因，获取锁失败（没有在至少N/2+1个Redis实例取到锁或者取锁时间已经超过了有效时间），客户端应该在所有的Redis实例上进行解锁（即便某些Redis实例根本就没有加锁成功）</li>
+</ol>
+<p>上面步骤意思就是，只要在大多数节点上加锁成功，则获取锁成功。但是这样也并不能解决故障重启后带来的锁安全问题。假如一共有5台实例且Redis没有使用持久化策略，一个客户端获取到3个实例的锁。此时其中一个客户端实例重启，在这个时间点，可能出现3个节点没有设置锁。此时如果有另外一个客户端来设置锁，锁有可能被再次获取，这样就违背了锁的互斥原则。</p>
+<p>即使启用了AOF持久化策略，AOF默认情况下每秒写一次磁盘，即fsync操作，因此最坏情况下丢失一秒的数据。但是，即使只有一秒，也有可能出现未来得及持久化，仍会出现重复加锁的情况。</p>
+<p>因此Redis的作者提出延时重启的方案，即节点崩溃之后，不要立即重启它，而是等待超过锁的过期时间后重启，保证自身上的锁都过期。但是这样做，有可能会让系统彻底转化为不可用状态。例如大部分redis实例崩溃，系统在这个时间段内任何锁都无法加锁成功。</p>
+<p>因此，可以看出，在集群情况下，没有一种完美的方案，任何方案都会有极端的情况出现。如果系统可以接受极端情况下可能发生的问题，这种方案也是可以使用的，这就要看系统的需求取舍。</p>
+<h3 id="Redisson实现原理"><a href="#Redisson实现原理" class="headerlink" title="Redisson实现原理"></a>Redisson实现原理</h3><p>先来看一下网上找的一张Redisson原理图，我觉得画的还是挺清晰的<br><img src="/2020/04/19/distributed-redisLock/redisson.png" alt></p>
+<h4 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h4><p><img src="/2020/04/19/distributed-redisLock/code.jpg" alt></p>
+<h4 id="加锁源码"><a href="#加锁源码" class="headerlink" title="加锁源码"></a>加锁源码</h4><p>相比看到这里，肯定会有疑问，基于我们上面说的</p>
+<blockquote>
+<p>SET key random_value NX PX 30000</p>
+</blockquote>
+<p>为什么RLock lock = client.getLock(“lcc”);lock.lock();就能加锁成功呢？value又是多少呢？ 设置的过期时间又是多少？<br>带着这些疑问，我们进入源码一探究竟。<br>首先lock会执行到这里:</p>
+<blockquote>
+<p>org.redisson.RedissonLock#lock(long, java.util.concurrent.TimeUnit, boolean)<br><img src="/2020/04/19/distributed-redisLock/lock1.jpg" alt></p>
+</blockquote>
+<p>这里可以看到，将当前线程的线程ID作为参数传入，后续会用到这个ID。<br>接着继续Debug，会进入：<br><img src="/2020/04/19/distributed-redisLock/lock2.jpg" alt></p>
+<blockquote>
+<p>org.redisson.RedissonLock#tryAcquireAsync<br>其中一个参数为：commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout()，可以看到这个时间默认为private long lockWatchdogTimeout = 30 * 1000;</p>
+</blockquote>
+<p>这关键参数就是 设置锁的默认过期时间。<br>继续往下看<br><img src="/2020/04/19/distributed-redisLock/lock3.jpg" alt></p>
+<p>其中 internalLockLeaseTime 是过期时间，而getLockName(threadId)是拼接ID+线程ID<br><img src="/2020/04/19/distributed-redisLock/lock5.jpg" alt></p>
+<ul>
+<li><p>而ID是从commandExecutor.getConnectionManager()中获取，<br><img src="/2020/04/19/distributed-redisLock/lock6.jpg" alt></p>
+</li>
+<li><p>继续网上找，connectionManager是在Redisson构造函数时创建<br><img src="/2020/04/19/distributed-redisLock/lock7.jpg" alt></p>
+</li>
+<li><p>一路跋山涉水终于找到 ID的来源是 UUID。<br><img src="/2020/04/19/distributed-redisLock/lock8.jpg" alt></p>
+</li>
+</ul>
+<p>由此可以推断，虽然获取锁时没有显式执行value，但是<strong>Redisson会默认帮我们生成UUID + 线程ID 作为 value,过期时间为默认30s</strong>。我们等会进行验证。</p>
+<p>我们接着分析加锁这段的这段lua脚本。</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">//第一段代码</span><br><span class="line"><span class="keyword">if</span> (redis.call(<span class="string">'exists'</span>, KEYS[<span class="number">1</span>]) == <span class="number">0</span>) <span class="keyword">then</span>  </span><br><span class="line">  redis.call(<span class="string">'hincrby'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">2</span>], <span class="number">1</span>);  </span><br><span class="line">  redis.call(<span class="string">'pexpire'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">1</span>]);  </span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span>;  </span><br><span class="line"><span class="keyword">end</span>; </span><br><span class="line">//第一段代码</span><br><span class="line"><span class="keyword">if</span> (redis.call(<span class="string">'hexists'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">2</span>]) == <span class="number">1</span>) <span class="keyword">then</span> </span><br><span class="line">  redis.call(<span class="string">'hincrby'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">2</span>], <span class="number">1</span>); </span><br><span class="line">  redis.call(<span class="string">'pexpire'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">1</span>]); </span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span>; </span><br><span class="line"><span class="keyword">end</span>; </span><br><span class="line"><span class="keyword">return</span> redis.call(<span class="string">'pttl'</span>, KEYS[<span class="number">1</span>]);</span><br></pre></td></tr></table></figure>
+<p><img src="/2020/04/19/distributed-redisLock/lock4.jpg" alt></p>
+<p>可以看到，这段脚本中，keys：是我们getLock时设置的key，params是lua脚本的参数，其中ARGV[1]是 30000，ARGV[2]是 UUID+线程ID。</p>
+<p>第一段脚本中 判断 key是否存在，如果不存在，则使用hincrby命令。<br><img src="/2020/04/19/distributed-redisLock/hincrby.jpg" alt></p>
+<p>可以看出来，value的数据结构是hash,hincrby 将哈希表 key 中域 field 的值设置为1。</p>
+<p>最后返回nil，这样完成加锁操作。</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420203418581.png" alt></p>
+<p>通过客户端检测，发现确实如我们上面猜测的那样，Redisson加锁操作会自动帮我们通过 <strong>hincrby</strong>命令生成 数据类型为hash的 key由 UUID + 线程ID，value 为 进入次数 的 value。</p>
+<p>第二段代码 则是判断 key 为 KEYS[1] ,field为ARGV[2]的数据是否存在，如果存在，说明是<strong>重入锁</strong>，则用hincrby 命令对ARGV[2] 字段进行加一操作。然后重新设置过期时间为 30s。</p>
+<p>第三段代码则返回KEYS[1]的存活时间。</p>
+<p>因此，三段代码组合在一起的逻辑是：当一个key加锁成功或者重入成功，则将过期时间重新设置为30s，如果加锁失败，则返回存活时间。</p>
+<h4 id="解锁源码"><a href="#解锁源码" class="headerlink" title="解锁源码"></a>解锁源码</h4><p>加锁的时候，可以看到，成功加锁一次，则filed加一，那么解锁自然可以想到，解锁一次，将filed减1，直到field值为0，才算解锁成功。</p>
+<blockquote>
+<p>​    在源码org.redisson.RedissonLock#unlockInnerAsync里</p>
+</blockquote>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420205603185.png" alt></p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420210256359.png" alt></p>
+<p>通过debug，可以看到，KEYS[1]为“lcc”，ARGV[1] 为0 ，ARGV[2]为30000，ARGV[3]为 UUID + 线程ID，因此解锁逻辑如下：</p>
+<p>判断 key 为lcc 且filed 为 uuid + 线程ID 的数据是否存在，不存在这直接返回nil不需要解锁 。</p>
+<blockquote>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (redis.call(<span class="string">'hexists'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">3</span>]) == <span class="number">0</span>) <span class="keyword">then</span> </span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line"><span class="keyword">end</span>;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后如果存在，则将field 用 hincrby命令 减1，然后判断 counter是否为0，如果不为0，说明还没使用完毕，再重新将过期时间设置为30s。</p>
+<blockquote>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;<span class="keyword">local</span> counter = redis.call(<span class="string">'hincrby'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">3</span>], <span class="number">-1</span>); </span><br><span class="line"><span class="keyword">if</span> (counter &gt; <span class="number">0</span>) <span class="keyword">then</span> </span><br><span class="line">&gt;redis.call(<span class="string">'pexpire'</span>, KEYS[<span class="number">1</span>], ARGV[<span class="number">2</span>]); </span><br><span class="line">&gt;<span class="keyword">return</span> <span class="number">0</span>;  </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>如果counter为0，则删除key，同时，要进行<strong>publish</strong>。</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> </span><br><span class="line">    redis.call(<span class="string">'del'</span>, KEYS[<span class="number">1</span>]); </span><br><span class="line">    redis.call(<span class="string">'publish'</span>, KEYS[<span class="number">2</span>], ARGV[<span class="number">1</span>]); </span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>; </span><br><span class="line"><span class="keyword">end</span>;</span><br></pre></td></tr></table></figure>
+
+<p>看到 publish 命令，立马会想到 Redis 的发布/订阅功能。那这里是发布什么事件？既然是分布式锁，自己解锁成功，说明是用完了这把锁，那么自然是告诉其他线程，可以来进行竞争锁操作。那么可以联想到自然是加锁失败时候，订阅事件。加锁时，我们只关注了lock里面的tryAcquire，此时我们回看 tryAcquire后面的操作。 </p>
+<blockquote>
+<p>​    org.redisson.RedissonLock#lock(long, java.util.concurrent.TimeUnit, boolean)</p>
+</blockquote>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420211834782.png" alt></p>
+<p>因此，整个链路就清楚了。加锁—&gt;释放锁整个过程是：</p>
+<p><strong>判断 key 是否存在，如果不存在，则用 hincrby 将 field 进行加一操作，将过期时间设为默认30s，然后返回空。如果key存在，说明这次是重入锁，则对field进行加一操作。此时field代表锁进入次数。如果加锁失败，则对该key进行订阅。</strong> </p>
+<p><strong>解锁时，判断key是否存在，如果不存在则不需要进行解锁，如果存在，将field减1，然后计算counter，如果counter不为0，说明此时还在使用锁，则将过期时间重新设置为30s。如果counter为0，说明解锁成功，然后对该key进行发布操作，通知其他程序进行加锁操作。</strong></p>
+<h3 id="看门狗watch-dog"><a href="#看门狗watch-dog" class="headerlink" title="看门狗watch dog"></a>看门狗watch dog</h3><p>Redisson还有一个重要的功能就是看门狗自动延期机制。我们思考一下，如何能够在 持有锁时间超过了过期时间，这把锁仍存在。最简单的办法就是 起一个后台线程，不断循环检查，如果我们还持有这把锁，就把这把锁延期。那么怎么样才能是看门狗机制生效？什么时候加锁成功会启动看门狗机制？循环查询频率是多少？看门狗什么时候能知道不需要在续期了？带着这些疑问，再次回到加锁的逻辑</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420220032018.png" alt></p>
+<p>首先，当leaseTime == -1时，才会走下面逻辑，否则直接return tryLockInnerAsync()方法。这里说明，<strong>只有在 用 lock()时，不指定leaseTime即过期时间时，才能启动看门狗机制</strong>。</p>
+<p>其次，我们在加锁的时候知道，当首次加锁成功或者再次重入加锁成功，都会返回nil，因此 红线框的部分，只有在加锁后才会进入。没有加锁成功，则不会进入scheduleExpirationRenewal方法。那么肯定会有疑问，那么当重入的时候，会再次开启看门狗机制吗？</p>
+<p>答案是不会。如下图所示，只有在首次加锁后，ConcurrentMap的putIfAbsent 返回为null，此时进入renewExpiration()方法，重入加锁后，putIfAbsent 返回不为null，因此不会执行renewExpiration()方法。因此<strong>只有在首次加锁才会启动看门狗机制</strong>。</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420220543692.png" alt></p>
+<p>继续进入 renewExpiration()方法，</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420221703803.png" alt></p>
+<p>发现这里启动了一个Task，run()方法为自动续期的逻辑方法，dealy为 internalLockLeaseTime / 3。</p>
+<p>首先分析核心的续期方法renewExpirationAsync()。</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420222956200.png" alt></p>
+<p>这里判断 key是否存在，如果存在，则 pexpire 续期 30s。如果不存在，也就不需要进行续期了，则返回0。</p>
+<p>其次， 该任务每 internalLockLeaseTime/3 后执行一次，默认时间为30s，则说明该任务每10s执行一次。也就是说在默认30s下，会在20s的时候执行一次renewExpirationAsync()方法，将过期时间设置为30s。</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420231652538.png" alt></p>
+<p>上图可以发现，当重新设置过期时间后，会重新调用renewExpiration()，再次增加任务。至于Timeout是个什么东西？点进去发现是Netty包下面，因为对Netty不是很熟悉，查阅相关资料之后，发现是基于netty时间轮实现的。</p>
+<p><img src="/2020/04/19/distributed-redisLock/sheel-1587395249473.jpg" alt></p>
+<p>网上搜一下，时间轮可以用这个图来描述。假设时间轮大小为8，1s转一格，每格指向一个链表。假设要增加一个3s后的任务，则在第3格的链表中添加一个任务节点，并且标识该节点round=0。超过8的则取模增加到相应格子里，例如添加17s后的任务，（0+17）%8 = 1，并且经过两轮，因此标记round=2，时间轮经过第一格后，对应链表里的任务round会减一，当时间轮第3次经过第一格时，会执行该任务。时间轮每次只会执行round=0的任务。</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420231420533.png" alt></p>
+<p>至于最后一个问题，看门狗什么时候能知道不需要在续期了？答案是在解锁后</p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420231954287.png" alt></p>
+<p><img src="/2020/04/19/distributed-redisLock/image-20200420232204108.png" alt></p>
+<p>因此可以看出来，在解锁后，会调用cancelExpirationRenewal()，取消定时任务。</p>
+<h3 id="Redis分布式锁总结"><a href="#Redis分布式锁总结" class="headerlink" title="Redis分布式锁总结"></a>Redis分布式锁总结</h3><p>以上是Redis由单点部署版到集群方案，再到Redisson 单机模式具体实现的分析。其实Redisson里面还有哨兵模式、集群模式的实现，区别就是Config 的构造不同。Redison中RedLock的实现则是RedissonRedLock(RLock… locks)。Redis分布式锁不管什么方式，都会存在安全性问题，但是由于Redis的特性，Redis的性能明显优于其他分布式锁。因此根据自己业务进行取舍。如果对性能要求不高，则可以使用zookeeper分布式锁。接下来对Zookeeper分布式锁进行研究。</p>
+<h2 id="Zookeeper分布式锁"><a href="#Zookeeper分布式锁" class="headerlink" title="Zookeeper分布式锁"></a>Zookeeper分布式锁</h2>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/" rel="tag"># 分布式锁</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/19/mysql/" rel="prev" title="Mysql之事务篇">
+      <i class="fa fa-chevron-left"></i> Mysql之事务篇
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/19/mysql-index/" rel="next" title="MySQL之索引原理及性能优化">
+      MySQL之索引原理及性能优化 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis分布式锁"><span class="nav-number">1.</span> <span class="nav-text">Redis分布式锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#单点Redis分布式锁"><span class="nav-number">1.1.</span> <span class="nav-text">单点Redis分布式锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis集群"><span class="nav-number">1.2.</span> <span class="nav-text">Redis集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redlock算法"><span class="nav-number">1.3.</span> <span class="nav-text">Redlock算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redisson实现原理"><span class="nav-number">1.4.</span> <span class="nav-text">Redisson实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#代码示例"><span class="nav-number">1.4.1.</span> <span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#加锁源码"><span class="nav-number">1.4.2.</span> <span class="nav-text">加锁源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解锁源码"><span class="nav-number">1.4.3.</span> <span class="nav-text">解锁源码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#看门狗watch-dog"><span class="nav-number">1.5.</span> <span class="nav-text">看门狗watch dog</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis分布式锁总结"><span class="nav-number">1.6.</span> <span class="nav-text">Redis分布式锁总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper分布式锁"><span class="nav-number">2.</span> <span class="nav-text">Zookeeper分布式锁</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

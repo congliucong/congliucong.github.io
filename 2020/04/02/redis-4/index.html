@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在Redis分布式锁那篇 文章，我们提到过Redis的高可用如何实现。这篇文章，我们就系统来讲解一下Redis主从架构、哨兵模式以及集群模式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis知识归纳(四)高可用、高并发">
+<meta property="og:url" content="http://yoursite.com/2020/04/02/redis-4/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="在Redis分布式锁那篇 文章，我们提到过Redis的高可用如何实现。这篇文章，我们就系统来讲解一下Redis主从架构、哨兵模式以及集群模式。">
+<meta property="og:image" content="http://yoursite.com/2020/04/02/redis-4/redis-master-slave.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/02/redis-4/consistent-hashing-algorithm.png">
+<meta property="article:published_time" content="2020-04-02T14:49:40.000Z">
+<meta property="article:modified_time" content="2020-05-06T12:02:28.443Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/02/redis-4/redis-master-slave.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/04/02/redis-4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>Redis知识归纳(四)高可用、高并发 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/02/redis-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis知识归纳(四)高可用、高并发
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-02 22:49:40" itemprop="dateCreated datePublished" datetime="2020-04-02T22:49:40+08:00">2020-04-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/02/redis-4/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/02/redis-4/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在Redis分布式锁那篇 文章，我们提到过Redis的高可用如何实现。这篇文章，我们就系统来讲解一下Redis主从架构、哨兵模式以及集群模式。</p>
+<a id="more"></a>
+
+<h3 id="主从架构"><a href="#主从架构" class="headerlink" title="主从架构"></a>主从架构</h3><p>单机Redis能够承载的QPS大概上万到几万不等。因此架构做成主从架构，一主多从，主负责写，并且将数据复制到其他从节点上，从节点负责读。所有读请求全部走从节点，这样的架构很容易水平扩容，从而实现<strong>读高并发</strong>。</p>
+<p><img src="/2020/04/02/redis-4/redis-master-slave.png" alt></p>
+<h4 id="主从复制的核心原理"><a href="#主从复制的核心原理" class="headerlink" title="主从复制的核心原理"></a>主从复制的核心原理</h4><p>当启动一个从节点时，它会发送一个<strong>PSYNC</strong>命令给主节点。</p>
+<p>如果这是从节点第一次连接到主节点上，那么就会触发一次<strong>全量复制</strong>。此时主节点会启动一个后台程序，开始在磁盘生成一份RDB快照，同时，还会将接收到的新的写命令缓存在内存中。RDB文件生成完毕后，mater会把这个RDB发送给slave。<strong>slave会先写入本地磁盘，然后从本地磁盘中加载到内存中</strong>，接着maser会将内存中的缓存写命令发送给slave，slave也会同步这些数据。slave如果跟master断开了连接，会自动重连，连接之后master会复制给slave缺少的部分。</p>
+<p>那么<strong>断点续传</strong>的原理是什么？</p>
+<p>主节点会在内存中维护一个backlog，主节点和从节点都会保存一个offset，还有一个master run id。如果主节点和从节点断开连接，下次重连后，从节点会让主节点从offset的地方开始继续复制，如果没有找到offset，那么就重新来一次全量复制。</p>
+<p>或者可以配置成 <strong>无磁盘化复制</strong>。</p>
+<p>主节点直接在内存中创建RDB，发送给从节点 。</p>
+<h4 id="过期key处理"><a href="#过期key处理" class="headerlink" title="过期key处理"></a>过期key处理</h4><p>从节点不会处理过期key，只会等待主节点来淘汰自己的过期key。当主节点删除一个过期key后，会模拟一条del命令发送给从节点。</p>
+<h3 id="哨兵模式"><a href="#哨兵模式" class="headerlink" title="哨兵模式"></a>哨兵模式</h3><h5 id="哨兵的功能"><a href="#哨兵的功能" class="headerlink" title="哨兵的功能"></a>哨兵的功能</h5><ol>
+<li>集群监控：负责监控redis master和slave进程是否正常工作</li>
+<li>消息通知：如果某个redis 实例有故障，那么哨兵负责发送警报给管理员</li>
+<li>故障转移：如果master挂掉，那么会自动转移到slave 节点上。</li>
+<li>配置中心：如果发生故障转移，那么会通知客户端新的master地址。</li>
+</ol>
+<p>哨兵用于实现redis集群的<strong>高可用</strong>。</p>
+<h5 id="哨兵的要求"><a href="#哨兵的要求" class="headerlink" title="哨兵的要求"></a>哨兵的要求</h5><p>哨兵模式要求<strong>两个以上</strong>节点，即最少三个实例，来保障程序的健壮性。</p>
+<p>经典的 3 节点哨兵集群是这样的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">       +----+</span><br><span class="line">       | M1 |</span><br><span class="line">       | S1 |</span><br><span class="line">       +----+</span><br><span class="line">          |</span><br><span class="line">+----+    |    +----+</span><br><span class="line">| R2 |----+----| R3 |</span><br><span class="line">| S2 |         | S3 |</span><br><span class="line">+----+         +----+</span><br></pre></td></tr></table></figure>
+
+<h5 id="哨兵主备切换的数据丢失问题"><a href="#哨兵主备切换的数据丢失问题" class="headerlink" title="哨兵主备切换的数据丢失问题"></a>哨兵主备切换的数据丢失问题</h5><ol>
+<li>异步复制导致的数据丢失</li>
+</ol>
+<p>因为master到slave的复制是异步的，有可能master还有数据没有达到slave，此时master宕机，那么这部分数据就会丢失。</p>
+<ol start="2">
+<li>脑裂导致数据丢失</li>
+</ol>
+<p><strong>脑裂</strong>是指，当master所在机器跟其他节点脱离了正常的网络，跟其他slave机器不能连接，但实际上还是运行的。此时哨兵可能认为master宕机了，然后开始选举，将其他slave切换为master。此时集群里面就有两个matser，也就是所谓的<strong>脑裂</strong>。</p>
+<p>但此时客户端可能还没来得及切换到新的master，仍然往旧的mater上写数据。旧的master会重新作为slave挂在新的master上，自己的数据会清空，从新的mater上复制数据。因此，新的master没有后来客户端写的数据，因此这部分数据就发生了丢失。</p>
+<h5 id="数据丢失的解决方案"><a href="#数据丢失的解决方案" class="headerlink" title="数据丢失的解决方案"></a>数据丢失的解决方案</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">min-slaves-to-write <span class="number">1</span></span><br><span class="line">min-slaves-max-lag <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<p>要求至少有1个slave连接到master上，数据复制和同步的延迟不能超过10秒。否则master就拒接写请求，这样如果发生脑裂，原先的master节点接受客户端的写入请求会被拒绝，就可以减少数据丢失问题。</p>
+<h5 id="哨兵集群的自动发现机制"><a href="#哨兵集群的自动发现机制" class="headerlink" title="哨兵集群的自动发现机制"></a>哨兵集群的自动发现机制</h5><p>哨兵之间相互发现是通过Redis的pub/sub 发布/订阅系统实现的。</p>
+<p>每个哨兵都会往 <strong>sentinel:hello</strong>这个channel上发送一个消息，这时候所有其他哨兵都可以消费到这个消息，并感其他哨兵的存在。</p>
+<p>每隔两秒中，每个哨兵都往自己监控的某个 master+slaves对应的<strong>sentinel:hello</strong> channel里面发送一个消息，内容是自己的host ip 和 runid 还有对这个master的监控配置</p>
+<p>每个哨兵也会监听自己监控的master + slaves对应的<strong>sentinel:hello</strong>的channel，然后去感知同样在监听这个master + slaves的其他哨兵的存在。</p>
+<p>每个哨兵还会跟其他哨兵交换对master的监控配置，互相进行监控配置的同步。</p>
+<h5 id="哨兵主从选举算法"><a href="#哨兵主从选举算法" class="headerlink" title="哨兵主从选举算法"></a>哨兵主从选举算法</h5><p>某个哨兵发现某个实例回复ping命令超过指定的值，那么就被标记为<strong>主观下线</strong>，如果主节点被标记为主观下线，那么所有哨兵都会每秒一次的频率来确认主节点的确进入了主观下线。</p>
+<p>当足够数量的哨兵都同意这一判断，那么主节点被会认为<strong>客观下线</strong>。如果大多数的哨兵都允许主备切换，那么某个哨兵就会执行主备切换操作。此时会首先选举出一个slave来，使其变为主服务器。然后通过发布和订阅功能，将更新后的配置发送给其他哨兵，其他哨兵把自己的配置进行更新。同时通知其他slave，让他们去复制新的主服务器。当所有从服务器都开始复制新的主服务器，那么执行主备切换的哨兵就完成此次故障迁移操作。</p>
+<h3 id="Redis集群"><a href="#Redis集群" class="headerlink" title="Redis集群"></a>Redis集群</h3><p>在早年间，redis如果想要多实例，每个实例存储一部分数据，需要一些中间件来实现，比如 codis、twemproxy。原理是通过读写中间件，中间件将数据分布式存储在多台机器的实例上。</p>
+<p>现在redis原生支持redis集群模式，主要针对的是海量数据+高并发+高可用场景。redis cluster支撑N个redis master node，每个master node都可以挂载多个slave node。这样整个redis就可以横向扩容。</p>
+<h5 id="分布式寻址算法"><a href="#分布式寻址算法" class="headerlink" title="分布式寻址算法"></a>分布式寻址算法</h5><p>hash算法<br>一致性hash算法 + 虚拟节点<br>redis cluster的hash slot算法</p>
+<ol>
+<li>hash算法</li>
+</ol>
+<p>对key计算哈希值后对节点数去模。但是这个做法的最大问题是一旦某个节点宕机，所有节点请求过来后会基于最新的剩余master节点数取模，尝试去取数据。这会导致大部分的请求过来，全部无法拿到有效的缓存，从而导致大量的流量涌入数据库，造成缓存雪崩。</p>
+<ol start="2">
+<li>一致性hash算法</li>
+</ol>
+<p>一致性hash算法是将整个hash值空间组织成一个虚拟的环，整个空间按照顺时针反向组织，下一步将各个master节点（使用服务器的ip 或者 主机名）进行hash。这样就能确定每个节点在其hash环上的位置。</p>
+<p>对key计算哈希值，确定此数据在圆环上的位置，从此位置沿圆环顺时针行走，遇到第一个master节点就是key所在的位置。</p>
+<p>在一致性hash算法中，如果一个节点挂了，那么受影响的数据仅仅是此节点到环空间前一个节点之间的数据，其他的不会会受到影响。但是如果当节点太少时，容易因为节点分布不均匀造成缓存热点倾斜的问题。为了解决这个问题，一致性hash算法引入了虚拟节点的机制，即对每一个节点计算多个hash，每个计算结果的位置都放置一个服务节点，称虚拟节点，具体做法可以在服务器ip或者主机名后面增加编号来实现。例如可以为每台服务器计算三个虚拟节点，于是可以分别计算“Node A#1”、“Node A#2”、“Node A#3”，数据定位算法不变，只是多一步虚拟节点到实际节点的映射。因此通过虚拟节点可以做到相对均匀的数据分布。</p>
+<p><img src="/2020/04/02/redis-4/consistent-hashing-algorithm.png" alt></p>
+<ol start="3">
+<li>redis cluster 的 hash slot算法</li>
+</ol>
+<p>redis cluster有固定的16384个hash slot。对每个 key 计算 CRC16值，然后对16384取模，可以获取key对应的hash slot。redis cluster 中的每个master都会持有部分slot，比如有3个master,那么每个master都持有5000多个哈希槽。哈希槽让node的增加和移除都很简单，增加一个master，就将其他master的slot 移动部分过去，减少一个master，就将其slot移动到其他master上。</p>
+<h5 id="redis-cluster的高可用与主备切换原理"><a href="#redis-cluster的高可用与主备切换原理" class="headerlink" title="redis cluster的高可用与主备切换原理"></a>redis cluster的高可用与主备切换原理</h5><p>redis cluster的高可用，几乎跟哨兵类似。</p>
+<ol>
+<li>判断节点宕机</li>
+</ol>
+<p>如果一个节点认为另外一个节点宕机，那么就是pfail ,主观宕机，当多数节点认为另外一个节点宕机了，那么就是fail，客观宕机。当在指定时间内没有回复pong，则被认为是pfail。如果一个节点认为某个节点pfail，那么就会告诉其他节点，如果超过半数的节点认为pfail，那么就是fail。</p>
+<ol start="2">
+<li>从节点过滤</li>
+</ol>
+<p>对宕机的master node，从其所有的slave node中选择一个切换为master node。检查每个slave 与 master 断开连接的时间，如果超过了指定时间，就没有资格成为master。</p>
+<ol start="3">
+<li>从节点选举</li>
+</ol>
+<p>每个从节点都根据自己对master复制数据的offset，来设置一个选举时间，offset越大，意味着从主节点复核的数据越多，那么选举时间越靠前，优先进行选举。</p>
+<p>所有master开始slave选举，给要进行选举的slave进行投票，如果大部分的master（N/2+1）都投票给了某个从节点，那么选举通过，那个从节点变为master。从节点执行主备切换，从节点切换为主节点。</p>
+<p>所以redis cluster就是一个 replication 和 sentinel 的结合体。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Redis/" rel="tag"># Redis</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/02/redis-3/" rel="prev" title="Redis知识归纳(三)管道（Pipelining）">
+      <i class="fa fa-chevron-left"></i> Redis知识归纳(三)管道（Pipelining）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/03/redis-5/" rel="next" title="Redis知识归纳(五)持久化机制">
+      Redis知识归纳(五)持久化机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#主从架构"><span class="nav-number">1.</span> <span class="nav-text">主从架构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#主从复制的核心原理"><span class="nav-number">1.1.</span> <span class="nav-text">主从复制的核心原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#过期key处理"><span class="nav-number">1.2.</span> <span class="nav-text">过期key处理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#哨兵模式"><span class="nav-number">2.</span> <span class="nav-text">哨兵模式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#哨兵的功能"><span class="nav-number">2.0.1.</span> <span class="nav-text">哨兵的功能</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#哨兵的要求"><span class="nav-number">2.0.2.</span> <span class="nav-text">哨兵的要求</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#哨兵主备切换的数据丢失问题"><span class="nav-number">2.0.3.</span> <span class="nav-text">哨兵主备切换的数据丢失问题</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#数据丢失的解决方案"><span class="nav-number">2.0.4.</span> <span class="nav-text">数据丢失的解决方案</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#哨兵集群的自动发现机制"><span class="nav-number">2.0.5.</span> <span class="nav-text">哨兵集群的自动发现机制</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#哨兵主从选举算法"><span class="nav-number">2.0.6.</span> <span class="nav-text">哨兵主从选举算法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis集群"><span class="nav-number">3.</span> <span class="nav-text">Redis集群</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#分布式寻址算法"><span class="nav-number">3.0.1.</span> <span class="nav-text">分布式寻址算法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#redis-cluster的高可用与主备切换原理"><span class="nav-number">3.0.2.</span> <span class="nav-text">redis cluster的高可用与主备切换原理</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

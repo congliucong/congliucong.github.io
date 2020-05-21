@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式事务之解决方案">
+<meta property="og:url" content="http://yoursite.com/2020/04/18/distributed-transactionSolution/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。">
+<meta property="og:image" content="http://yoursite.com/2020/04/18/distributed-transactionSolution/image-20200506230455505.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/18/distributed-transactionSolution/1090617.jpg">
+<meta property="article:published_time" content="2020-04-18T13:58:07.000Z">
+<meta property="article:modified_time" content="2020-05-07T12:04:37.399Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="分布式事务">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/18/distributed-transactionSolution/image-20200506230455505.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/04/18/distributed-transactionSolution/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>分布式事务之解决方案 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/18/distributed-transactionSolution/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式事务之解决方案
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-18 21:58:07" itemprop="dateCreated datePublished" datetime="2020-04-18T21:58:07+08:00">2020-04-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/18/distributed-transactionSolution/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/18/distributed-transactionSolution/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在分布式事务之初始seata中，我们提到常见的分布式事务解决方案有：2PC方案、3PC方案、TCC方案、本地消息表方案和可靠消息最终一致性方案等。我们今天就来对着几个分布式方案进行归纳。</p>
+<a id="more"></a>
+
+<p>在介绍分布式方案前，我们先对几个分布式相关理论进行总结。</p>
+<h3 id="CAP理论"><a href="#CAP理论" class="headerlink" title="CAP理论"></a>CAP理论</h3><p>CAP理论指的是 在一个分布式系统中，最多只能满足C A P中的两个需求。其中，</p>
+<ol>
+<li>C : Consistency <strong>一致性</strong>。指的是同一个数据多个实例中是否实时相同。</li>
+<li>A ：Availability <strong>可用性</strong>。一定时间内、系统可以返回一个明确的结果，则表示该系统可用。</li>
+<li>P ：Partition tolerance : <strong>分区容错性</strong>。即使出现单个服务实例宕机，分布式系统中其他服务实例仍然可以提供服务。</li>
+</ol>
+<p>首先，我们需要明确的是，在这三个属性中，<strong>分区容错性是首先需要保证的</strong>，不然分布式系统也就没有意义了。所以我们只能在 <strong>一致性</strong> 和 <strong>可用性</strong> 之间选择。对于我们业务系统来说，<strong>首先要保证的是系统的可用性</strong>，如果系统因为系统异常、响应时间过长等导致系统不可用，那么系统也就没有存在的意义。</p>
+<p>另外，对于我们分布式系统来说，注册中心是比不可少的。因此我们可以进行对比：</p>
+<ol>
+<li><strong>zookeeper支持CP</strong>，任何时刻对zk进行访问，都能得到一致性的结果。当zk进行leader选举的时候，zk集权是不对外提供服务的。这个我们对ZK原理讲解的时候再来探讨。</li>
+<li><strong>Eureka支持AP</strong>，Eureka集群中，所有节点都是平等的，所以即使其中某台实例宕机，也会将请求自动转发到其他节点，所以是支持可用性，但是不能保证一致性，因为各节点之间异步复制，所有可能存在某个时刻节点之间数据不同。</li>
+</ol>
+<h3 id="BASE理论"><a href="#BASE理论" class="headerlink" title="BASE理论"></a>BASE理论</h3><p>BASE理论是对CAP中一致性和可用性之间做的权衡。</p>
+<p>BASE理论说的是：</p>
+<ol>
+<li><strong>Basic Available 基本可用</strong>。系统在某些极端情况下，仍然可以保证可用性，即一定时间内仍然可以返回一个明确的结果。</li>
+<li><strong>Soft state（软状态）</strong>。同一数据在不同实例中，可以不需要保持实时一致。</li>
+<li><strong>Eventually consistent（最终一致性）</strong>。虽然不需要实时一致，但是要保证在经过一定时间后仍然是一致的。</li>
+</ol>
+<p>所以BASE理论的核心思想是：<strong>虽然无法做到强一致性，但是我们可以降低要求，采用适当的方式达到最终一致性。</strong></p>
+<h3 id="分布式事务解决方案"><a href="#分布式事务解决方案" class="headerlink" title="分布式事务解决方案"></a>分布式事务解决方案</h3><h4 id="2PC-二阶段提交"><a href="#2PC-二阶段提交" class="headerlink" title="2PC 二阶段提交"></a>2PC 二阶段提交</h4><p>2PC即两阶段提交协议，将整个事务流程分为两个阶段，</p>
+<p>*<em>1. 准备阶段 *</em></p>
+<p>事务管理器给每个参与者发送prepare消息，每个数据库参与者在本地执行事务，并写本地undo/redo日志，此时事务还没有提交。（undo日志是记录修改前的数据，用于数据库回滚。redo日志是记录修改后的数据，用于提交事务后写入数据文件）</p>
+<p><strong>2.提交阶段</strong></p>
+<p>如果事务管理器收到了参与者的执行失败或者超时信息，直接给每个参与者发送回滚rollback消息；否则，发送提交信息。参与者根据事务管理器的执行进行提交或者回滚操作，并释放事务处理过程中的锁资源。</p>
+<p><img src="/2020/04/18/distributed-transactionSolution/image-20200506230455505.png" alt></p>
+<h4 id="3PC-三阶段提交"><a href="#3PC-三阶段提交" class="headerlink" title="3PC 三阶段提交"></a>3PC 三阶段提交</h4><p>三阶段比二阶段有两个改动点：</p>
+<ol>
+<li>引入超时机制。同时在协调者和参与者都引入了超时机制</li>
+<li>在第一个阶段和第二个阶段引入一个准备阶段。</li>
+</ol>
+<p>因此整个事务流程分为三个阶段：</p>
+<p><strong>1. CanCommit阶段</strong></p>
+<p>协调者向参与者发送cancommit请求，询问是否可以执行事务，然后等待参与者的响应。参与者认为自身可以顺利执行事务，则返回yes，并且进入预备状态，否则返回no。</p>
+<p><strong>2.PreCommit阶段</strong></p>
+<p>协调者根据参与者的返回情况作出不同的反应：</p>
+<ol>
+<li><strong>如果第一阶段所有参与者反馈都是yes</strong>，那么 协调者向参与者发送PreCommit请求，并且 进入PrePared阶段；参与者接收到PreCommit请求后，执行事务操作，并将写本地undo/redo日志；如果参与者成功执行了事务操作，则返回ack响应，并且等待最终指令。</li>
+<li><strong>如果第一阶段有任何一个参与者发送了No或者等待超时之后，协调者都没有收到参与者的响应</strong>，就执行事务的abort操作。协调者向所有参与者发送abort请求，那么整个事务到此结束，说明第一阶段没有参与者没有准备好。</li>
+</ol>
+<p><strong>3.doCommit阶段</strong></p>
+<p>这个阶段执行真正的事务提交，也可以分为以下两种情况：</p>
+<ol>
+<li><strong>执行提交</strong>。</li>
+</ol>
+<p>协调者向接受到所有参与者的第二阶段的ack响应，那么协调者的状态由预提交状态进入提交状态，并向所有参与者发送doCommit请求。</p>
+<p>参与者接收到doCommit请求后，执行真正的事务提交，并在事务提交后，释放所有事务资源，并且向协调者发送ack响应。</p>
+<p>协调者接收到所有参与者的第三阶段的ack响应后，完成事务。</p>
+<p><strong>2.中断事务</strong></p>
+<p>协调者没有接收到参与者第二阶段的ack响应，那么就执行中断事务。协调者向所有参与者发送abort请求。</p>
+<p>参与者接受到abort请求之后，利用其在第二阶段的undo信息来执行事务的回滚操作，并在回滚之后释放所有事务资源。</p>
+<p>参与者完成事务回滚之后，向协调者发送ack消息。</p>
+<p>协调者接收到参与者的ack消息之后，结束整个事务。</p>
+<h3 id="TCC-补偿式事务"><a href="#TCC-补偿式事务" class="headerlink" title="TCC 补偿式事务"></a>TCC 补偿式事务</h3><p>TCC即 Try Commit Cancel，采用补偿机制。</p>
+<p><strong>1.Try</strong>  尝试待执行的业务</p>
+<p>这个过程并未真正执行业务，只是完成所有业务的一致性检查，并预留好执行所需的全部资源。</p>
+<p><strong>2.Confirm</strong> 执行业务</p>
+<p>这个过程真正开始执行业务，由于第一阶段已经完成了一致性检查，因此本过程直接执行，并不做任何检查，并且在执行的过程，会使用Try阶段预留的业务资源</p>
+<p><strong>3.Cancel</strong> : 取消执行的业务</p>
+<p>如果业务执行失败，则进入Cancel阶段，它会释放所有占用的业务资源，并且回滚Confirm阶段进行的操作。</p>
+<p>缺点就是：<strong>大量业务侵入代码，每个分支都需要try confirm cancel三个操作</strong>。</p>
+<h3 id="本地消息表"><a href="#本地消息表" class="headerlink" title="本地消息表"></a>本地消息表</h3><p>本地消息表也正是目前我们项目中使用到的方案，下面进行具体介绍。</p>
+<ol>
+<li>A系统执行本地事务，并且在A系统的消息表中插入一条记录，状态为待确认，这两个操作在一个事务中，因为在同一个数据库，因此可以保证。</li>
+<li>准备一个后台程序，源源不断的把消息表中的message传送给MQ。如果失败，则重试，可以允许数据重复。</li>
+<li>B系统作为消费者，接收到MQ的消息，在一个事务中，首先在B系统的消息表中插入一条数据，然后执行B系统的业务逻辑。<ol>
+<li>如果判重表中存在 ，说明已经消费过这条数据，那么不执行业务逻辑，实现幂等性。</li>
+<li>如果B系统业务操作成功，则更新消息表的状态，然后通知A系统修改A系统的消息表状态为成功。</li>
+<li>如果B系统业务操作失败则事务回滚，则不去通知A系统修改A系统的消息表。因为A系统的定时任务会不断轮询自己的消息表，将待确认的消息继续重新发送给B直到B成功为止。</li>
+</ol>
+</li>
+</ol>
+<h3 id="基于RocketMQ实现最终一致性分布式事务"><a href="#基于RocketMQ实现最终一致性分布式事务" class="headerlink" title="基于RocketMQ实现最终一致性分布式事务"></a>基于RocketMQ实现最终一致性分布式事务</h3><p>我们先了解几个RocketMQ的概念。</p>
+<ol>
+<li><p>Half Message 半消息<br>指的是暂时不能被消费者消费的消息。Producer已经把消息成功发送到Broker端，但是此消息被标记为“暂不能投递”状态，处于这种状态下的消息成为半消息，需要生产者二次确认后，消费者才能去消费它。</p>
+</li>
+<li><p>消息回查<br>由于网络问题、生产者应用重启等原因，导致生产者一直没有对半消息进行二次确认，那么Broker会定时扫描 长期处于半消息的消息，会主动询问生产者该消息的最终状态，该消息即为 消息回查。<br><img src="/2020/04/18/distributed-transactionSolution/1090617.jpg" alt></p>
+</li>
+</ol>
+<p>工作流程：</p>
+<ol>
+<li>A服务先发送一个半消息给MQ，当发送成功后，开始执行A系统的业务逻辑。</li>
+<li>如果A系统的业务逻辑执行成功，那么就向MQ发送commit消息，这样B系统就可以消费该message。</li>
+<li>如果A系统的业务逻辑失败，那么就向MQ发送Rollback，那么MQ就会直接删除这条半消息。</li>
+<li>如果因为网络原因MQ迟迟没有接收到commit消息或者RollBack消息，那么MQ会调用回调接口，来进行事务回查。</li>
+<li>B系统接收到这个message，如果B失败则不断重试直到成功。超过一定次数之后可以告诉A系统，让A系统也回滚或者发送警报人工干预。</li>
+</ol>
+<h3 id="seata框架保证分布式事务"><a href="#seata框架保证分布式事务" class="headerlink" title="seata框架保证分布式事务"></a>seata框架保证分布式事务</h3><p>这个我们在上篇里面已经提到过，这里不再赘述。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>对于分布式事务，能不用就不用，因为引入分布式事务之后，对于系统的复杂性是大幅提高的。即使要用，要考虑到业务的实际性，是需要强一致性还是最终一致性即可。</p>
+<p>现在梳理下目前系统中用到本地消息表的具体流程：</p>
+<p>当拣货完成的时候，要对库存进行扣减、拣货单状态修改以及对应出库单状态修改，并且记录节点信息。库存服务是一个微服务，单据服务也是一个微服务。系统流程是先进行库存扣减，扣减成功之后再更新单据状态。因此，<br>先调用库存服务：</p>
+<ol>
+<li>记录消息表，其中消息表记录拣货明细对应的记录，状态为待确认</li>
+<li>执行库存扣减服务，成功之后将单据号等信息发送到MQ中。</li>
+<li>同时设定一个定时任务，不断轮询库存扣减消息表，将待确认的消息发送的MQ<br>以上两步在同一个事务中，成功则一起成功，失败则全部回滚。</li>
+</ol>
+<p>单据服务消费MQ中的消息：</p>
+<ol>
+<li>首先在记录消息插入该消息，内容主要是物流中心代码、拣货单号、出库单号，插入成功之后</li>
+<li>执行修改单据服务，如果单据状态修改成功，则将单据服务成功的消息发回到MQ中，通知A修改A的消息表状态。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" rel="tag"># 分布式事务</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/17/distributed-seata/" rel="prev" title="分布式事务之初识seata">
+      <i class="fa fa-chevron-left"></i> 分布式事务之初识seata
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/19/mysql/" rel="next" title="Mysql之事务篇">
+      Mysql之事务篇 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAP理论"><span class="nav-number">1.</span> <span class="nav-text">CAP理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BASE理论"><span class="nav-number">2.</span> <span class="nav-text">BASE理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分布式事务解决方案"><span class="nav-number">3.</span> <span class="nav-text">分布式事务解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2PC-二阶段提交"><span class="nav-number">3.1.</span> <span class="nav-text">2PC 二阶段提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3PC-三阶段提交"><span class="nav-number">3.2.</span> <span class="nav-text">3PC 三阶段提交</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TCC-补偿式事务"><span class="nav-number">4.</span> <span class="nav-text">TCC 补偿式事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#本地消息表"><span class="nav-number">5.</span> <span class="nav-text">本地消息表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于RocketMQ实现最终一致性分布式事务"><span class="nav-number">6.</span> <span class="nav-text">基于RocketMQ实现最终一致性分布式事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#seata框架保证分布式事务"><span class="nav-number">7.</span> <span class="nav-text">seata框架保证分布式事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
