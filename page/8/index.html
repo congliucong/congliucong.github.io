@@ -202,6 +202,134 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/01/redis-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/04/01/redis-1/" class="post-title-link" itemprop="url">Redis知识归纳(一)Redis为什么这么快？</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-01 20:42:35" itemprop="dateCreated datePublished" datetime="2020-04-01T20:42:35+08:00">2020-04-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/01/redis-1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/01/redis-1/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Redis目前可以说是每个工程师必会的。这分布式锁之<a href="https://blog.yzylcc.top/2020/04/19/redisLock/#valine-comments" target="_blank" rel="noopener">Redis分布式锁</a>中，我们对Redis进行了部分讲解。这个系列对Redis进行系统的知识归纳。</p>
+<p><img src="/2020/04/01/redis-1/02523119.png" alt></p>
+<h3 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h3><p>我们第一个问题就来探索，Redis为什么这么快？这个问题要从Redis的线程模型说起。</p>
+<h4 id="Redis的线程模型"><a href="#Redis的线程模型" class="headerlink" title="Redis的线程模型"></a>Redis的线程模型</h4><p>Redis内部使用<strong>文件事件处理器 file event hanler</strong>，它的组成是<strong>多个socket</strong>、<strong>I/O多路复用程序</strong>、<strong>文件分派器</strong>、<strong>事件处理器</strong>组成，因为文件事件处理器是单线程的，所以redis 才叫做单线程模型。文件事件处理器会使用I/O多路复用程序来同时监听多个socket，多个文件事件可能并发出现，但是I/O多路复用程序会把所有事件套接字放在一个队列中，然后<strong>同步有序</strong>的向文件分派器传送，当上一个socket的事件处理完，才会传送下一个socket。</p>
+<p><img src="/2020/04/01/redis-1/redis-single-thread-model.png" alt></p>
+<p>上图是一个完整的客户端与Redis通信过程。</p>
+<ol>
+<li>redis服务端初始化的时候，会将server socket的AE_READABLE事件与连接应答处理器关联。</li>
+<li>客户端client向redis进程的server socket请求建立连接，此时server socket会产生一个AE_READABLE事件，IO多路复用程序监听到server socket产生的事件后，将该socket压入队列，文件事件分派器，从队列中获取socket，交给连接应答处理器。连接应答处理器会创建一个能与客户端通信的socket01，并将该socket01的AE_READABLE事件与命令请求处理器关联。</li>
+</ol>
+<p><img src="/2020/04/01/redis-1/image-20200505212847090.png" alt></p>
+<ol start="3">
+<li>假如此时客户端发送了 set key value请求，此时redis的socket01会产生AE_READABLE事件，IO多路复用程序会将socket01压入队列，此时事件分派器从队列中获取到socket01的AE_READABLE事件，由于前面socket01的AE_READABLE事件与命令请求处理器关联，因此事件分派器将事件交给命令请求处理器来处理。命令处理器读取socket01的key value并在自己内存中完成key value的设置，操作完成后，将socket01的AE_WRITEABLE事件与命令回复处理器相关联。</li>
+</ol>
+<p><img src="/2020/04/01/redis-1/image-20200505213621924.png" alt></p>
+<ol start="4">
+<li>如果此时客户端准备好接受返回结果了，那么redis中的socket01会产生一个AE_WRITABLE事件，同样压入队列中，事件分派器找到相关联的命令回复处理器，由命令回复处理器对socket01输出本次操作的结果，比如 ok ，之后解除socket01的AE_WRITABLE事件与命令回复处理器的关联。</li>
+</ol>
+<p><img src="/2020/04/01/redis-1/image-20200505214525300.png" alt></p>
+<p>这样就完成了一次通信过程。</p>
+<p>可以看出首先找到请求应答处理器，将AE_READABLE事件与命令处理器关联。当客户端发出命令时，通过AE_READABLE事件找到命令处理器处理命令，同时将AE_WRITABLE事件与命令回复处理器关联。最终 socket01产生AE_WRITABLE事件，再通过该事件找到命令回复处理器，最终完成回复，并解除关联。整个过程串行进行。</p>
+<h4 id="IO多路复用程序"><a href="#IO多路复用程序" class="headerlink" title="IO多路复用程序"></a>IO多路复用程序</h4><p>IO多路复用是用<strong>一个线程监听多个socket</strong>，谁有读写事件就处理谁，减少线程切换开销和IO阻塞。</p>
+<p>redis的IO多路复用 程序是包装常见的select poll epoll等IO多路复用库实现的。</p>
+<ol>
+<li><strong>select</strong> : 传入的需要检查的描述子个数 fds、读fd_set、写fd_set、异常fd_set参数，数据结构是bitmap。缺点在于fds最大支持1024个，并且每次调用都要把fd集合拷贝到内核态，每次都要遍历所有fds，开销很大</li>
+<li><strong>poll</strong> : 跟select差不多，不过数据结构是链表，因此大小没有限制</li>
+<li><strong>epoll</strong> : epoll是对select，poll的改进。epoll_create在内核创建一个红黑树，用于存储epoll_ctl产过来的socket，同时创建一个链表，用于存储准备就绪的事件。epoll_wait调用时，只需要观察链表里面有没有数据即可。保证了每个fd在整个过程中只拷贝一次，并且不需要遍历所有fd，效率很高。</li>
+</ol>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>所以，我们可以从几个方面总结为什么Redis这么快？</p>
+<ol>
+<li>因为Redis的线程模型<strong>文件事件处理器</strong>使用的是IO多路复用模型。</li>
+<li>纯内存操作</li>
+<li>单线程避免了上下文的切换问题，也避免了多线程可能产生的竞争问题。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/29/spring-refresh/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -773,109 +901,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/14/spring-circle/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Lcc">
-      <meta itemprop="description" content="好好学习，天天向上">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lcccc">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/03/14/spring-circle/" class="post-title-link" itemprop="url">Spring之循环依赖</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-03-14 20:03:50" itemprop="dateCreated datePublished" datetime="2020-03-14T20:03:50+08:00">2020-03-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2020/03/14/spring-circle/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/03/14/spring-circle/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>越来越发现把自己学习过程落笔成文，是一件很爽的事情。</p>
-<p>今天尝试记录一下Spring是如何解决循环依赖的。其实循环依赖只是Spring加载Bean过程之中一个问题，今天我们先从这个高频问题开始Spring IOC。先看看Spring 循环依赖常见的问题。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/03/14/spring-circle/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -944,7 +969,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-count">50</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -993,12 +1018,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">345k</span>
+    <span title="站点总字数">347k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">5:14</span>
+    <span title="站点阅读时长">5:15</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
