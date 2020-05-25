@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="趁热打铁，刚进行了30分钟的灵魂发问，发现好多基础的知识反而忘了，比如Error和Exception的父类是什么？。。。太惭愧了。  不过问题不大，学到了就是赚到了。这篇文章主要来讲述Java的异常体系。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java基础之异常体系">
+<meta property="og:url" content="http://yoursite.com/2020/05/25/java-exception/index.html">
+<meta property="og:site_name" content="Lcccc">
+<meta property="og:description" content="趁热打铁，刚进行了30分钟的灵魂发问，发现好多基础的知识反而忘了，比如Error和Exception的父类是什么？。。。太惭愧了。  不过问题不大，学到了就是赚到了。这篇文章主要来讲述Java的异常体系。">
+<meta property="og:image" content="http://yoursite.com/2020/05/25/java-exception/0BFCF9F5.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/25/java-exception/image-20200525210635765.png">
+<meta property="og:image" content="http://yoursite.com/2020/05/25/java-exception/image-20200525220736509.png">
+<meta property="article:published_time" content="2020-05-25T12:45:15.000Z">
+<meta property="article:modified_time" content="2020-05-25T14:14:54.953Z">
+<meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/25/java-exception/0BFCF9F5.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/25/java-exception/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>Java基础之异常体系 | Lcccc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lcccc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fas fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-java基础">
+
+    <a href="/categories/Java%E5%9F%BA%E7%A1%80" rel="section"><i class="fab fa-java fa-fw"></i>Java基础</a>
+
+  </li>
+        <li class="menu-item menu-item-jvm相关">
+
+    <a href="/categories/Jvm%E7%9B%B8%E5%85%B3" rel="section"><i class="fab fa-java fa-fw"></i>Jvm相关</a>
+
+  </li>
+        <li class="menu-item menu-item-redis">
+
+    <a href="/categories/Redis" rel="section"><i class="far fa-registered fa-fw"></i>Redis</a>
+
+  </li>
+        <li class="menu-item menu-item-消息中间件">
+
+    <a href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6" rel="section"><i class="far fa-meh-blank fa-fw"></i>消息中间件</a>
+
+  </li>
+        <li class="menu-item menu-item-dubbo">
+
+    <a href="/categories/Dubbo" rel="section"><i class="fas fa-landmark fa-fw"></i>Dubbo</a>
+
+  </li>
+        <li class="menu-item menu-item-spring">
+
+    <a href="/categories/Spring" rel="section"><i class="fas fa-landmark fa-fw"></i>Spring</a>
+
+  </li>
+        <li class="menu-item menu-item-mysql">
+
+    <a href="/categories/Mysql" rel="section"><i class="fas fa-database fa-fw"></i>Mysql</a>
+
+  </li>
+        <li class="menu-item menu-item-分布式相关">
+
+    <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F" rel="section"><i class="fas fa-network-wired fa-fw"></i>分布式相关</a>
+
+  </li>
+        <li class="menu-item menu-item-算法">
+
+    <a href="/categories/%E7%AE%97%E6%B3%95" rel="section"><i class="fas fa-child fa-fw"></i>算法</a>
+
+  </li>
+        <li class="menu-item menu-item-杂谈">
+
+    <a href="/categories/%E6%9D%82%E8%B0%88" rel="section"><i class="far fa-smile-wink fa-fw"></i>杂谈</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fas fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fas fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/25/java-exception/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Lcc">
+      <meta itemprop="description" content="好好学习，天天向上">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lcccc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java基础之异常体系
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-25 20:45:15" itemprop="dateCreated datePublished" datetime="2020-05-25T20:45:15+08:00">2020-05-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/25/java-exception/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/25/java-exception/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>趁热打铁，刚进行了30分钟的灵魂发问，发现好多基础的知识反而忘了，比如Error和Exception的父类是什么？。。。太惭愧了。</p>
+<p><img src="/2020/05/25/java-exception/0BFCF9F5.png" alt></p>
+<p>不过问题不大，学到了就是赚到了。这篇文章主要来讲述Java的异常体系。</p>
+<a id="more"></a>
+
+<h3 id="Java异常体系"><a href="#Java异常体系" class="headerlink" title="Java异常体系"></a>Java异常体系</h3><p>首先解决第一个问题：<strong>Error和Exception的父类是什么？</strong></p>
+<p><img src="/2020/05/25/java-exception/image-20200525210635765.png" alt></p>
+<p>在Java语言中，异常对象都继承于<strong>Throwable类</strong>。两大子类分别是Error和Exception。</p>
+<p>Error类描述了Java运行时系统内部错误和资源耗尽错误，这种情况对于程序本身来说是无法处理的，只能尽力使程序安全的终止。最为常见的就是Java虚拟机崩溃，比如：<strong>OutOfMemoryError、NoSuchFieldError、NoSuchMethodError</strong>等。</p>
+<p>Exception类又分为RuntimeException和其他异常。两者划分的区别在于由程序错误导致的异常属于RuntimeException；而程序本身没有问题，但是由于像IO错误这类问题导致的异常属于其他异常。</p>
+<ol>
+<li><p><strong>RuntimeException</strong>主要是：</p>
+<p>错误的类型转换：<strong>ClassCastException</strong>、</p>
+<p>数组访问越界：<strong>IndexOutOfBoundsException</strong>、</p>
+<p>访问null指针：<strong>NullPointerException</strong>。</p>
+</li>
+<li><p><strong>其他异常</strong>主要是：编译期间可以检查到的异常，必须显式的进行处理（捕获或者抛到上一层），例如：</p>
+<p>试图在文件尾部后面读取数据、</p>
+<p>试图打开一个不存在的文件、</p>
+<p>试图根据给定的字符串查找Class对象，而这个字符串表示的类并不存在</p>
+<p>还有就是Thread.sleep时，需要捕获的InterruptedException异常等等。</p>
+</li>
+</ol>
+<p>Java语言规范将派生与Error类或者RuntimeException类的所有异常称为非受查异常，所有其他的异常为受查异常。</p>
+<h3 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h3><p>对于异常的处理，常用的关键字就是 try/catch/throw/throws/finally。</p>
+<p>一般使用有 try……catch; try…….catch…..finally；或者try……..finally。catch可以有多个，但是最多只会匹配其中一个异常类且只执行该catch的代码，而且会先catch子类异常再catch父类异常。</p>
+<p>而对于<strong>finally</strong>来说，无论try代码块里面是否抛出异常，亦或者代码抛出了异常，但是这个异常不是由catch子句所捕获，finally中的代码一定会得到执行。因此，我们finally语句为异常处理提供一个统一的出口，使得在能够对程序的状态进行统一的管理，例如进行资源的清除工作，如文件的关闭、删除临时文件、数据库连接的关闭等。但是需要注意的是，当try代码块中有return语句，finally子句中也包含return语句，那么在方法返回之前，会先执行finally子句的内容，因此finally中的返回值将会覆盖原始的返回值。例如：</p>
+<p><img src="/2020/05/25/java-exception/image-20200525220736509.png" alt></p>
+<p>对于<strong>throw</strong>关键字来说，主要用于抛出一个Throwable类型的异常，并且作用在方法语句中，如果所有方法层层往上抛，那么最终由JVM进行处理，即打印异常信息和堆栈信息。而<strong>throws</strong>则是方法体上抛出一个异常，并且其他方法调用这个方法时知道要捕获这个异常。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/21/spring-lifeCycle/" rel="prev" title="Spring之IOC(四)Bean的生命周期">
+      <i class="fa fa-chevron-left"></i> Spring之IOC(四)Bean的生命周期
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java异常体系"><span class="nav-number">1.</span> <span class="nav-text">Java异常体系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异常处理"><span class="nav-number">2.</span> <span class="nav-text">异常处理</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Lcc</p>
+  <div class="site-description" itemprop="description">好好学习，天天向上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">51</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备18032544号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lcc</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">348k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">5:17</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.7/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'LvCFelhSs5qo2YxIqHl88ejb-gzGzoHsz',
+      appKey     : 'ryaWfNw4bBIuGCIHeUbN2Gb2',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
