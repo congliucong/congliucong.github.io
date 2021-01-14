@@ -202,7 +202,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/01/14/java-LongAdder/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/27/java-LongAdder/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -216,7 +216,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/01/14/java-LongAdder/" class="post-title-link" itemprop="url">Java基础之LongAdder</a>
+            <a href="/2020/06/27/java-LongAdder/" class="post-title-link" itemprop="url">Java基础之LongAdder</a>
         </h2>
 
         <div class="post-meta">
@@ -226,7 +226,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-01-14 21:19:09" itemprop="dateCreated datePublished" datetime="2021-01-14T21:19:09+08:00">2021-01-14</time>
+              <time title="创建时间：2020-06-27 21:19:09" itemprop="dateCreated datePublished" datetime="2020-06-27T21:19:09+08:00">2020-06-27</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -247,8 +247,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2021/01/14/java-LongAdder/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2021/01/14/java-LongAdder/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/06/27/java-LongAdder/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/06/27/java-LongAdder/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -280,7 +280,7 @@
           <p>最近在翻看ConcurrentHashMap源码计数部分时，发现counterCell的实现原理其实跟LongAdder分段技术原理类似，因此深入学习一下LongAdder的实现原理。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/01/14/java-LongAdder/#more" rel="contents">
+              <a class="btn" href="/2020/06/27/java-LongAdder/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -351,7 +351,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>354</span>
+              <span>358</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -370,26 +370,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="ES核心概念和原理"><a href="#ES核心概念和原理" class="headerlink" title="ES核心概念和原理"></a>ES核心概念和原理</h3><h4 id="1-什么是搜索？"><a href="#1-什么是搜索？" class="headerlink" title="1. 什么是搜索？"></a>1. 什么是搜索？</h4><p>搜索是指通过一个<strong>关键字</strong>或者<strong>一段描述</strong>，得到你想要的（相关度高）的结果。</p>
-<h4 id="2-倒排索引"><a href="#2-倒排索引" class="headerlink" title="2. 倒排索引"></a>2. 倒排索引</h4><p><img src="/2020/06/22/elasticsrerch/image-20200622233453971.png" alt></p>
-<p>数据结构：</p>
-<ol>
-<li>包含这个关键词的document list</li>
-<li>关键字在每个doc中出现的次数 TF term frequency</li>
-<li>关键词在整个索引中出现的次数 IDF inverse doc frequency</li>
-<li>关键词在当前doc中出现的次数</li>
-<li>每个doc的长度，越长相关度越低</li>
-<li>包含这个关键词的所有doc的平均长度</li>
-</ol>
-<p>IDF越高，相关度越低</p>
-<h4 id="Lucene"><a href="#Lucene" class="headerlink" title="Lucene"></a>Lucene</h4><p>jar包，可以帮我们创建倒排索引，提供了复杂的API。但是Lucene是单点的，做集群实现搜索，会存在问题：</p>
-<ol>
-<li>节点一旦宕机，数据丢失，可用性差。</li>
-<li>自己维护，自己创建管理索引，单台节点的承载请求能力是有限的。</li>
-</ol>
-<p>而ES Cluster 屏蔽了底层集群问题，ES Client提供了大量的查询方法：</p>
-<p><img src="/2020/06/22/elasticsrerch/image-20200622235017946.png" alt></p>
-
+          <h3 id="ES核心概念和原理（未完）"><a href="#ES核心概念和原理（未完）" class="headerlink" title="ES核心概念和原理（未完）"></a>ES核心概念和原理（未完）</h3>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/06/22/elasticsrerch/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
