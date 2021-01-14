@@ -27,14 +27,15 @@
 <meta property="og:url" content="http://yoursite.com/2020/06/27/java-LongAdder/index.html">
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="最近在翻看ConcurrentHashMap源码计数部分时，发现counterCell的实现原理其实跟LongAdder分段技术原理类似，因此深入学习一下LongAdder的实现原理。">
+<meta property="og:image" content="file:///C:%5CUsers%5Ccongc%5CAppData%5CLocal%5CTemp%5CSGPicFaceTpBq%5C15152%5C00A6D76D.jpg">
 <meta property="og:image" content="http://yoursite.com/2020/06/27/java-LongAdder/image-20210114235242423.png">
 <meta property="og:image" content="http://yoursite.com/2020/06/27/java-LongAdder/image-20210114235501180.png">
 <meta property="article:published_time" content="2020-06-27T13:19:09.000Z">
-<meta property="article:modified_time" content="2021-01-14T16:13:38.423Z">
+<meta property="article:modified_time" content="2021-01-14T16:31:22.144Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/06/27/java-LongAdder/image-20210114235242423.png">
+<meta name="twitter:image" content="file:///C:%5CUsers%5Ccongc%5CAppData%5CLocal%5CTemp%5CSGPicFaceTpBq%5C15152%5C00A6D76D.jpg">
 
 <link rel="canonical" href="http://yoursite.com/2020/06/27/java-LongAdder/">
 
@@ -284,6 +285,7 @@
 
       
         <p>最近在翻看ConcurrentHashMap源码计数部分时，发现counterCell的实现原理其实跟LongAdder分段技术原理类似，因此深入学习一下LongAdder的实现原理。</p>
+<p><img src="file:///C:%5CUsers%5Ccongc%5CAppData%5CLocal%5CTemp%5CSGPicFaceTpBq%5C15152%5C00A6D76D.jpg" alt="img"></p>
 <a id="more"></a>
 
 <h3 id="AtomicLong"><a href="#AtomicLong" class="headerlink" title="AtomicLong"></a>AtomicLong</h3><p>为什么要先记录AtomicLong，因为只有对比，才能更加理解原理之间的关系。</p>
