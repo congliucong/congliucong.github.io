@@ -36,7 +36,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/02/01/jvm-2/image-20200501210430465.png">
 <meta property="og:image" content="http://yoursite.com/2020/02/01/jvm-2/image-20200501193147779.png">
 <meta property="article:published_time" content="2020-02-01T11:15:05.000Z">
-<meta property="article:modified_time" content="2021-01-18T15:12:57.388Z">
+<meta property="article:modified_time" content="2021-01-18T15:30:43.372Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Java JVM">
 <meta name="twitter:card" content="summary">
@@ -297,11 +297,11 @@
 
 <h2 id="介绍你知道的垃圾收集器"><a href="#介绍你知道的垃圾收集器" class="headerlink" title="介绍你知道的垃圾收集器"></a>介绍你知道的垃圾收集器</h2><p><img src="/2020/02/01/jvm-2/image-20200501193029993.png" alt></p>
 <p>上图就是目前能常见并且足够成熟的垃圾收集器了。我们从最经典的Serial开始。</p>
-<h3 id="Serial收集器"><a href="#Serial收集器" class="headerlink" title="Serial收集器"></a>Serial收集器</h3><p>这是一个单线程工作的收集器，它的单线程不仅仅是只使用一个处理器或一条线程去完成垃圾收集工作，更重要的是<strong>强调它在进行垃圾收集时，必须暂停其他工作线程，直到它收集结束</strong>。它采用复制算法，可以与Serial Old 或者 CMS 配合使用。 </p>
+<h3 id="Serial收集器"><a href="#Serial收集器" class="headerlink" title="Serial收集器"></a>Serial收集器</h3><p>这是一个单线程工作的收集器，它的单线程不仅仅是只使用一个处理器或一条线程去完成垃圾收集工作，更重要的是<strong>强调它在进行垃圾收集时，必须暂停其他工作线程，直到它收集结束</strong>。它采用<strong>复制算法</strong>，可以与Serial Old 或者 CMS 配合使用。 </p>
 <p><img src="/2020/02/01/jvm-2/image-20200501194533607.png" alt></p>
-<h3 id="ParNew收集器"><a href="#ParNew收集器" class="headerlink" title="ParNew收集器"></a>ParNew收集器</h3><p>ParNew收集器实际上是Serial收集器的多线程版本，使用多条线程进行垃圾收集。同样使用复制算法，并且是除了Serial，唯一可以与CMS收集器配合使用的收集器。</p>
+<h3 id="ParNew收集器"><a href="#ParNew收集器" class="headerlink" title="ParNew收集器"></a>ParNew收集器</h3><p>ParNew收集器实际上是Serial收集器的多线程版本，使用多条线程进行垃圾收集。同样使用<strong>复制算法</strong>，并且是除了Serial，唯一可以与CMS收集器配合使用的收集器。</p>
 <p><img src="/2020/02/01/jvm-2/image-20200501194552781.png" alt></p>
-<h3 id="Parallel-Scavenge收集器"><a href="#Parallel-Scavenge收集器" class="headerlink" title="Parallel Scavenge收集器"></a>Parallel Scavenge收集器</h3><p>Parallel Scavenge收集也是一款新生代收集器，同样是基于复制算法实现的收集器，也是能够并行手机的多线程收集器。与其他收集器不同的是，Parallel Scavenge收集器的关注点不同，CMS等收集器的关注点尽可能地缩短垃圾收集时用户线程的停顿时间，而Parallel Scavenge收集器的目标则是<strong>达到一个可控制的吞吐量</strong>。经常被称为“吞吐量优先收集器”，尽力保证内存回收花费的时间不超过用户的设置值，并且可以设置自适应调节的参数。</p>
+<h3 id="Parallel-Scavenge收集器"><a href="#Parallel-Scavenge收集器" class="headerlink" title="Parallel Scavenge收集器"></a>Parallel Scavenge收集器</h3><p>Parallel Scavenge收集也是一款新生代收集器，同样是基于<strong>复制算法</strong>实现的收集器，也是能够并行手机的多线程收集器。与其他收集器不同的是，Parallel Scavenge收集器的关注点不同，CMS等收集器的关注点尽可能地缩短垃圾收集时用户线程的停顿时间，而Parallel Scavenge收集器的目标则是<strong>达到一个可控制的吞吐量</strong>。经常被称为“吞吐量优先收集器”，尽力保证内存回收花费的时间不超过用户的设置值，并且可以设置自适应调节的参数。</p>
 <h3 id="Serial-Old收集器"><a href="#Serial-Old收集器" class="headerlink" title="Serial Old收集器"></a>Serial Old收集器</h3><p>Serial Old是Serial收集器的老年代版本，它同样是一个单线程收集器，使用<strong>标记-整理</strong>的算法。作为CMS收集器发生失败时的后备预案，在 并发收集发生Concurrent Mode Failure时使用。</p>
 <p><img src="/2020/02/01/jvm-2/image-20200501201130885.png" alt></p>
 <h3 id="Parallel-Old收集器"><a href="#Parallel-Old收集器" class="headerlink" title="Parallel Old收集器"></a>Parallel Old收集器</h3><p>Parallel Old是Parallel Scavenge收集器的老年代版本，支持多线程并发收集，基于<strong>标记-整理</strong>算法。因此，注重吞吐量或者处理器资源比较稀缺的场合，可以使用Parallel Scavenge + Parallel Old收集器组合。</p>
@@ -322,7 +322,7 @@
 <p>并发标记阶段是从GC Roots的直接关联对象开始遍历整个对象图的过程，这个过程耗时较长，但是不需要停顿用户线程，可以与垃圾收集线程一起并发运行。</p>
 <p>重新标记阶段则是为了修正并发标记期间，因为用户程序继续运作而导致标记产生变动的那一部分对象的标记记录，采用<strong>增量更新</strong>方式，这个阶段的停顿时间通常会比初始标记阶段稍长一些，但也远比并发标记阶段时间短。</p>
 <p>最后是并发清除阶段，清理删除掉标记阶段判断已经死亡的对象，由于不需要移动存活对象，因此，也可以与用户线程同时并发执行。</p>
-<p>由于整个过程中最耗时的并发标记和并发清除阶段都可以与用户线程一起工作，因此总体上CMS的内存回收过程是与用于新城一起并发执行。</p>
+<p>由于整个过程中最耗时的并发标记和并发清除阶段都可以与用户线程一起工作，因此总体上CMS的内存回收过程是与用户进程一起并发执行。</p>
 <p><img src="/2020/02/01/jvm-2/image-20200501202630691.png" alt></p>
 <p>但是，CMS也存在三个明显的缺点：</p>
 <ol>
