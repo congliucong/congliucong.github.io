@@ -28,8 +28,9 @@
 <meta property="og:site_name" content="Lcccc">
 <meta property="og:description" content="上篇文章我们通过手动加载bean，来大概的走了一遍bean的加载整个流程。这篇文章我们从ApplicationContext的角度来分析一下这个过程。">
 <meta property="og:image" content="http://yoursite.com/2020/03/29/spring-refresh/15409479819725.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/03/29/spring-refresh/SpringBeanLifrCycle.png">
 <meta property="article:published_time" content="2020-03-29T08:14:52.000Z">
-<meta property="article:modified_time" content="2020-05-12T11:38:19.209Z">
+<meta property="article:modified_time" content="2021-01-19T03:51:32.347Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
@@ -351,7 +352,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">![Spring Bean的声明周期](spring-refresh/Spring Bean的声明周期.png)<span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finishRefresh</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   <span class="comment">// Clear context-level resource caches (such as ASM metadata from scanning).</span></span><br><span class="line">   clearResourceCaches();</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Initialize lifecycle processor for this context.</span></span><br><span class="line">   initLifecycleProcessor();</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Propagate refresh to lifecycle processor first.</span></span><br><span class="line">   getLifecycleProcessor().onRefresh();</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Publish the final event.</span></span><br><span class="line">   publishEvent(<span class="keyword">new</span> ContextRefreshedEvent(<span class="keyword">this</span>));</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Participate in LiveBeansView MBean, if active.</span></span><br><span class="line">   LiveBeansView.registerApplicationContext(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>所以我们总结，整个refresh方法做的事情是：</p>
-<p>![](spring-refresh/Spring Bean的声明周期.png)</p>
+<p><img src="/2020/03/29/spring-refresh/SpringBeanLifrCycle.png" alt></p>
 
     </div>
 

@@ -31,7 +31,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/03/21/spring-IOC/spring-201805091003.jpg">
 <meta property="og:image" content="http://yoursite.com/2020/03/21/spring-IOC/image-20200504173907100.png">
 <meta property="article:published_time" content="2020-03-21T06:58:41.000Z">
-<meta property="article:modified_time" content="2021-01-19T03:29:47.294Z">
+<meta property="article:modified_time" content="2021-01-19T03:32:56.466Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
@@ -362,7 +362,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Map of bean definition objects, keyed by bean name */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, BeanDefinition&gt; beanDefinitionMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;(<span class="number">256</span>);</span><br></pre></td></tr></table></figure>
 
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>到这里，这个IOC的初始化就完成了。<strong>首先从资源的定位、转换为Document对象，然后进行解析，最后注册到IOC容器中</strong>。此时IOC容器已经有Bean的定义信息，已经为注入打好了基础。</p>
-<p><strong>Rource进行资源定位–&gt;BeanDefinitionRead初始化时进行RourceLoad定义–&gt;执行loadDefinition()解析Rource对象，根据id、name等进行属性解析最后构造成BeanDefinitionHolder返回–&gt;最后进行BeanDefinition进行注册，注册的过程其实是将BeanDefinition放到一个ConcurrentHashMap中</strong>。</p>
+<p><strong>Rource进行资源定位–&gt;BeanDefinitionRead初始化时进行RourceLoad定义–&gt;执行loadDefinition()解析Rource对象，根据id、name等进行属性解析最后构造成BeanDefinitionHolder返回–&gt;最后BeanDefinitionRegister进行BeanDefinition进行注册，注册的过程其实是将BeanDefinition放到一个ConcurrentHashMap中</strong>。</p>
 <p>接下来我们进入Bean的加载阶段。</p>
 <p><img src="/2020/03/21/spring-IOC/image-20200504173907100.png" alt></p>
 <blockquote>
