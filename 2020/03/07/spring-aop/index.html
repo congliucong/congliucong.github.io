@@ -37,6 +37,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422224416412.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422224557330.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422225054698.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422230232290.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422232321565.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422232828654.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200422233117093.png">
@@ -47,7 +48,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200423000223483.png">
 <meta property="og:image" content="http://yoursite.com/2020/03/07/spring-aop/image-20200423001636505.png">
 <meta property="article:published_time" content="2020-03-07T12:03:50.000Z">
-<meta property="article:modified_time" content="2021-01-19T02:13:14.469Z">
+<meta property="article:modified_time" content="2021-01-19T02:29:28.441Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
@@ -408,7 +409,7 @@
 <blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MethodInvocation invocation =</span><br><span class="line">      <span class="keyword">new</span> ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);</span><br><span class="line"><span class="comment">// 最后调用 ReflectiveMethodInvocation的proceed执行拦截链方法。</span></span><br><span class="line">retVal = invocation.proceed();</span><br></pre></td></tr></table></figure>
 </blockquote>
-<p>![(spring/image-20200422230232290.png)</p>
+<p><img src="/2020/03/07/spring-aop/image-20200422230232290.png" alt></p>
 <p>首先，如果没有拦截器，则直接调用<strong><em>invokeJoinpoint()</em></strong>方法，也就是上面的利用反射调用目标类的方法。</p>
 <p>然后 <strong><em>private int currentInterceptorIndex = -1</em></strong>; 默认为 -1,从第 0 个 拦截器开始</p>
 <p><img src="/2020/03/07/spring-aop/image-20200422232321565.png" alt></p>
