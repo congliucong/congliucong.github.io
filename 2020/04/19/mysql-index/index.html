@@ -31,7 +31,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/04/19/mysql-index/10.png">
 <meta property="og:image" content="http://yoursite.com/2020/04/19/mysql-index/11.png">
 <meta property="article:published_time" content="2020-04-19T15:42:21.000Z">
-<meta property="article:modified_time" content="2020-05-12T11:38:19.187Z">
+<meta property="article:modified_time" content="2021-01-19T12:30:07.870Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="Mysql">
 <meta name="twitter:card" content="summary">
@@ -347,7 +347,7 @@
 </ol>
 <p><strong>show processlist</strong><br>从返回结果中，我们可以了解到线程执行了什么命令/SQL语句以及执行的时间。其中state的值使我们判断性能好坏的关键，当出现如下内容，则代表这该行记录的SQL语句需要优化：<br> Converting HEAP to MyISAM 查询结果太大，把结果放到磁盘里面。<br> Create tmp table 创建临时表，严重<br> Copying to tmp table on disk 把内存临时表复制到磁盘，严重<br> locked 被其他查询锁住，严重<br> loggin slow quert 记录慢查询<br> sorting result 排序</p>
 <ol start="2">
-<li><p>开启慢查询日志<br>在配置文件my.cnf中【mysqld】一行下面添加两个参数：</p>
+<li><p>开启慢查询日志<br> 在配置文件my.cnf中【mysqld】一行下面添加两个参数：</p>
 <p>slow_query_log = 1<br>slow_query_log_file=/var/lib/mysql/slow-query.log<br>long_query_time = 2<br>log_queries_not_using_indexes = 1</p>
 <p>当有慢sql出现后，我们可以用Mysql提供的 mysqldumpslow 来查询是哪些语句执行时间长而导致慢查询的出现。</p>
 </li>
