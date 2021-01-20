@@ -21,21 +21,22 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="ES核心概念和原理（未完）">
+  <meta name="description" content="还记得在上一篇Dubbo的原理概述里面到，Dubbo的负载均衡策略有四种。 这不在Dubbo发布的2.7.7版本中，新增一种新的负载均衡策略。 那就来个总结把。这篇文章主要学习Why哥的文章的总结。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="elasticsrerch">
-<meta property="og:url" content="http://yoursite.com/2020/06/22/elasticsrerch/index.html">
+<meta property="og:title" content="Dubbo原理之负载均衡">
+<meta property="og:url" content="http://yoursite.com/2020/05/31/dubbo2/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="ES核心概念和原理（未完）">
-<meta property="og:image" content="http://yoursite.com/2020/06/22/elasticsrerch/image-20200622233453971.png">
-<meta property="og:image" content="http://yoursite.com/2020/06/22/elasticsrerch/image-20200622235017946.png">
-<meta property="article:published_time" content="2020-06-22T14:50:14.000Z">
-<meta property="article:modified_time" content="2021-01-14T16:12:54.172Z">
+<meta property="og:description" content="还记得在上一篇Dubbo的原理概述里面到，Dubbo的负载均衡策略有四种。 这不在Dubbo发布的2.7.7版本中，新增一种新的负载均衡策略。 那就来个总结把。这篇文章主要学习Why哥的文章的总结。">
+<meta property="og:image" content="http://yoursite.com/2020/05/31/dubbo2/640">
+<meta property="og:image" content="http://yoursite.com/2020/05/31/dubbo2/640">
+<meta property="article:published_time" content="2020-05-31T06:53:44.000Z">
+<meta property="article:modified_time" content="2021-01-20T08:10:34.110Z">
 <meta property="article:author" content="Lcc">
+<meta property="article:tag" content="Dubbo">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/06/22/elasticsrerch/image-20200622233453971.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/31/dubbo2/640">
 
-<link rel="canonical" href="http://yoursite.com/2020/06/22/elasticsrerch/">
+<link rel="canonical" href="http://yoursite.com/2020/05/31/dubbo2/">
 
 
 <script id="page-configurations">
@@ -48,7 +49,7 @@
   };
 </script>
 
-  <title>elasticsrerch | Lcccc</title>
+  <title>Dubbo原理之负载均衡 | Lcccc</title>
   
 
 
@@ -208,7 +209,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/22/elasticsrerch/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/31/dubbo2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -221,7 +222,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          elasticsrerch
+          Dubbo原理之负载均衡
         </h1>
 
         <div class="post-meta">
@@ -231,7 +232,16 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-06-22 22:50:14" itemprop="dateCreated datePublished" datetime="2020-06-22T22:50:14+08:00">2020-06-22</time>
+              <time title="创建时间：2020-05-31 14:53:44" itemprop="dateCreated datePublished" datetime="2020-05-31T14:53:44+08:00">2020-05-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Dubbo/" itemprop="url" rel="index"><span itemprop="name">Dubbo</span></a>
+                </span>
             </span>
 
           
@@ -243,8 +253,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/06/22/elasticsrerch/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/06/22/elasticsrerch/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/05/31/dubbo2/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/31/dubbo2/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -254,7 +264,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>358</span>
+              <span>1.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -273,27 +283,53 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="ES核心概念和原理（未完）"><a href="#ES核心概念和原理（未完）" class="headerlink" title="ES核心概念和原理（未完）"></a>ES核心概念和原理（未完）</h3><a id="more"></a>
+        <p>还记得在上一篇Dubbo的原理概述里面到，Dubbo的负载均衡策略有四种。</p>
+<p>这不在Dubbo发布的2.7.7版本中，新增一种新的负载均衡策略。</p>
+<p>那就来个总结把。这篇文章主要学习Why哥的<a href="https://mp.weixin.qq.com/s?__biz=MzIxNTQ4MzE1NA==&mid=2247487416&idx=1&sn=5d91466f26bafd14515ec943ed05338e&scene=21#wechat_redirect" target="_blank" rel="noopener">文章</a>的总结。</p>
+<a id="more"></a>
 
-<h4 id="1-什么是搜索？"><a href="#1-什么是搜索？" class="headerlink" title="1. 什么是搜索？"></a>1. 什么是搜索？</h4><p>搜索是指通过一个<strong>关键字</strong>或者<strong>一段描述</strong>，得到你想要的（相关度高）的结果。</p>
-<h4 id="2-倒排索引"><a href="#2-倒排索引" class="headerlink" title="2. 倒排索引"></a>2. 倒排索引</h4><p><img src="/2020/06/22/elasticsrerch/image-20200622233453971.png" alt></p>
-<p>数据结构：</p>
-<ol>
-<li>包含这个关键词的document list</li>
-<li>关键字在每个doc中出现的次数 TF term frequency</li>
-<li>关键词在整个索引中出现的次数 IDF inverse doc frequency</li>
-<li>关键词在当前doc中出现的次数</li>
-<li>每个doc的长度，越长相关度越低</li>
-<li>包含这个关键词的所有doc的平均长度</li>
+<h3 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h3><ol>
+<li>ConsistentHashLoadBalance  一致性哈希负载均衡。</li>
+<li>LeastActiveLoadBalance  最小活跃负载均衡。</li>
+<li>RandomLoadBalance  加权随机负载均衡</li>
+<li>RoundRobinLoadBalance 加权轮询负载均衡</li>
+<li>ShortestResponseLoadBalance最短响应时间负载均衡。</li>
 </ol>
-<p>IDF越高，相关度越低</p>
-<h4 id="Lucene"><a href="#Lucene" class="headerlink" title="Lucene"></a>Lucene</h4><p>jar包，可以帮我们创建倒排索引，提供了复杂的API。但是Lucene是单点的，做集群实现搜索，会存在问题：</p>
+<h4 id="最短响应时间负载均衡"><a href="#最短响应时间负载均衡" class="headerlink" title="最短响应时间负载均衡"></a>最短响应时间负载均衡</h4><p>原理是：</p>
+<ul>
+<li>从多个服务提供者中选择出调用成功的且响应时间最短的服务提供者，由于满足条件的可能有多个，因此就需要根据他们权重进行分析。</li>
+<li>如果选择只有一个，那么直接用这个</li>
+<li>如果有多个，看权重是否一样，不一样就走<strong>加权随机算法</strong>的逻辑。</li>
+<li>如果权重一样，那么就随意调用一个。</li>
+</ul>
+<p><img src="/2020/05/31/dubbo2/640" alt></p>
+<h4 id="最小活跃数负载均衡"><a href="#最小活跃数负载均衡" class="headerlink" title="最小活跃数负载均衡"></a>最小活跃数负载均衡</h4><p>最小活跃数树负载均衡算法必须配合ActiveLimitFilter使用，这样位于RpcStatus类的active字段才会起作用。通俗点讲就是<strong>有最小活跃数用最小活跃数，没有最小活跃数就根据权重选择，权重一样就随机返回。</strong></p>
+<p>工作原理是：</p>
+<ul>
+<li>遍历invokers列表，寻找活跃数最小的invoker。</li>
+<li>如果有多个invoker具有相同的最小活跃数，记录其在invokers集合中的下标，并累加他们的权重，判断权重值是否相等。</li>
+<li>如果只有一个invoker具有最小活跃数，直接返回即可。</li>
+<li>如果多个invoker具有最小活跃数，且他们的权重不相等，此时处理方式和RandomLoadBalance一致。</li>
+<li>如果有多个invoker具有最小活跃数，但他们的权重相等，随机返回一个。</li>
+</ul>
+<p><img src="/2020/05/31/dubbo2/640" alt></p>
+<h4 id="一致性哈希负载均衡"><a href="#一致性哈希负载均衡" class="headerlink" title="一致性哈希负载均衡"></a>一致性哈希负载均衡</h4><p>主要是理解一致性hash算法。对比一般hash有什么问题。数据倾斜怎么办？引入虚拟节点。</p>
+<p>还有问题是应用场景有那些？哪些业务是需要把用户每次请求都打到一台服务器上？</p>
+<p><strong>需要保证某一类请求必须顺序处理的业务场景</strong>。比如把用户的请求都打到同一台机器上，意味着把某一类请求发送到同一台机器上执行，我们只需要在机器上运行的程序中保证顺序执行即可，比如增加一个队列。</p>
+<p>所以，<strong>一致性哈希算法+队列</strong>可以实现顺序处理的请求。</p>
+<h4 id="加权随机算法"><a href="#加权随机算法" class="headerlink" title="加权随机算法"></a>加权随机算法</h4><p>随机，就是从服务提供者中随机选择一个出来。加权，指的是按照权重设置随机概率。</p>
+<p>常见的场景是性能好的机器权重大一点，性能差的权重小一点。</p>
+<h4 id="加权轮询负载均衡"><a href="#加权轮询负载均衡" class="headerlink" title="加权轮询负载均衡"></a>加权轮询负载均衡</h4><p>轮询就是将请求轮流分配给每台服务器上，<strong>优点</strong>是实现简单，这样每台服务器收到的请求量基本相同，适合于每台服务器性能相近的场景。</p>
+<p>但<strong>缺点</strong>也很明显，如果机器性能不大一样，那岂不是很有问题了。</p>
+<p>所以推出了<strong>加权轮询</strong>。</p>
+<p>当轮询遇到加权则让请求严格按照权重之比来进行分配，例如ABC三台服务器，权重比为5:3:2，那么一共处理10个请求，采用加权轮询算法时，ABC一定是分别承担5,3,2个请求。</p>
+<blockquote>
+<p>参考列表：</p>
 <ol>
-<li>节点一旦宕机，数据丢失，可用性差。</li>
-<li>自己维护，自己创建管理索引，单台节点的承载请求能力是有限的。</li>
+<li>Dubbo官网</li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzIxNTQ4MzE1NA==&amp;mid=2247487416&amp;idx=1&amp;sn=5d91466f26bafd14515ec943ed05338e&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">https://mp.weixin.qq.com/s?__biz=MzIxNTQ4MzE1NA==&amp;mid=2247487416&amp;idx=1&amp;sn=5d91466f26bafd14515ec943ed05338e&amp;scene=21#wechat_redirect</a></li>
 </ol>
-<p>而ES Cluster 屏蔽了底层集群问题，ES Client提供了大量的查询方法：</p>
-<p><img src="/2020/06/22/elasticsrerch/image-20200622235017946.png" alt></p>
+</blockquote>
 
     </div>
 
@@ -302,6 +338,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Dubbo/" rel="tag"># Dubbo</a>
+          </div>
 
         
 
@@ -309,12 +348,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/05/31/dubbo2/" rel="prev" title="Dubbo原理之负载均衡">
-      <i class="fa fa-chevron-left"></i> Dubbo原理之负载均衡
+    <a href="/2020/05/25/java-exception/" rel="prev" title="Java基础之异常体系">
+      <i class="fa fa-chevron-left"></i> Java基础之异常体系
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/06/27/java-LongAdder/" rel="next" title="Java基础之LongAdder">
-      Java基础之LongAdder <i class="fa fa-chevron-right"></i>
+    <a href="/2020/06/22/elasticsrerch/" rel="next" title="elasticsrerch">
+      elasticsrerch <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -375,7 +414,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#ES核心概念和原理（未完）"><span class="nav-number">1.</span> <span class="nav-text">ES核心概念和原理（未完）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-什么是搜索？"><span class="nav-number">1.1.</span> <span class="nav-text">1. 什么是搜索？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-倒排索引"><span class="nav-number">1.2.</span> <span class="nav-text">2. 倒排索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Lucene"><span class="nav-number">1.3.</span> <span class="nav-text">Lucene</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#负载均衡策略"><span class="nav-number">1.</span> <span class="nav-text">负载均衡策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#最短响应时间负载均衡"><span class="nav-number">1.1.</span> <span class="nav-text">最短响应时间负载均衡</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#最小活跃数负载均衡"><span class="nav-number">1.2.</span> <span class="nav-text">最小活跃数负载均衡</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#一致性哈希负载均衡"><span class="nav-number">1.3.</span> <span class="nav-text">一致性哈希负载均衡</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#加权随机算法"><span class="nav-number">1.4.</span> <span class="nav-text">加权随机算法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#加权轮询负载均衡"><span class="nav-number">1.5.</span> <span class="nav-text">加权轮询负载均衡</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
