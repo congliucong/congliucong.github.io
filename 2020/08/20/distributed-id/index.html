@@ -21,24 +21,21 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
+  <meta name="description" content="在分布式环境下，需要一个全局唯一标识对数据和消息进行标记。这个就是分布式ID。 分布式ID要求满足一下条件：  全局唯一 高并发 高可用 高性能  接下来就研究一下常见的分布式ID方案，做个总结。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java基础之CAS">
-<meta property="og:url" content="http://yoursite.com/2020/01/11/java-cas/index.html">
+<meta property="og:title" content="分布式之ID方案">
+<meta property="og:url" content="http://yoursite.com/2020/08/20/distributed-id/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430212433774.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430215459607.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430223919655.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/012743C4.png">
-<meta property="article:published_time" content="2020-01-11T11:56:37.000Z">
-<meta property="article:modified_time" content="2021-01-15T14:27:43.197Z">
+<meta property="og:description" content="在分布式环境下，需要一个全局唯一标识对数据和消息进行标记。这个就是分布式ID。 分布式ID要求满足一下条件：  全局唯一 高并发 高可用 高性能  接下来就研究一下常见的分布式ID方案，做个总结。">
+<meta property="og:image" content="http://yoursite.com/2020/08/20/distributed-id/image-20210120095413984.png">
+<meta property="article:published_time" content="2020-08-20T01:34:10.000Z">
+<meta property="article:modified_time" content="2021-01-20T02:12:25.224Z">
 <meta property="article:author" content="Lcc">
-<meta property="article:tag" content="Java">
+<meta property="article:tag" content="分布式ID">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430212433774.png">
+<meta name="twitter:image" content="http://yoursite.com/2020/08/20/distributed-id/image-20210120095413984.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/01/11/java-cas/">
+<link rel="canonical" href="http://yoursite.com/2020/08/20/distributed-id/">
 
 
 <script id="page-configurations">
@@ -51,7 +48,7 @@
   };
 </script>
 
-  <title>Java基础之CAS | Lcccc</title>
+  <title>分布式之ID方案 | Lcccc</title>
   
 
 
@@ -211,7 +208,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/11/java-cas/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/20/distributed-id/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -224,7 +221,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Java基础之CAS
+          分布式之ID方案
         </h1>
 
         <div class="post-meta">
@@ -234,7 +231,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-11 19:56:37" itemprop="dateCreated datePublished" datetime="2020-01-11T19:56:37+08:00">2020-01-11</time>
+              <time title="创建时间：2020-08-20 09:34:10" itemprop="dateCreated datePublished" datetime="2020-08-20T09:34:10+08:00">2020-08-20</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -242,7 +239,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
                 </span>
             </span>
 
@@ -255,8 +252,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/01/11/java-cas/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/01/11/java-cas/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/08/20/distributed-id/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/08/20/distributed-id/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -266,14 +263,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
+              <span>1.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>1 分钟</span>
             </span>
 
         </div>
@@ -285,63 +282,58 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。</p>
+        <p>在分布式环境下，需要一个<strong>全局唯一标识</strong>对数据和消息进行标记。这个就是分布式ID。</p>
+<p>分布式ID要求满足一下条件：</p>
+<ol>
+<li>全局唯一</li>
+<li>高并发 高可用 高性能</li>
+</ol>
+<p>接下来就研究一下常见的分布式ID方案，做个总结。</p>
 <a id="more"></a>
 
-<h2 id="什么是CAS"><a href="#什么是CAS" class="headerlink" title="什么是CAS"></a>什么是CAS</h2><p>CAS，全称是Compare and Swap。比较交换，在不使用锁的情况下实现多线程之间的变量同步。</p>
-<p>CAS算法涉及到三个值：</p>
+<h3 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h3><p>UUID是通用唯一标识，存在重复出现的概率极低。因此可以作为分布式ID。</p>
+<p>但是UUID的缺点也很明显：</p>
 <ol>
-<li>内存地址</li>
-<li>预期值</li>
-<li>更新值</li>
+<li>占用空间过多</li>
+<li>不是递增有序</li>
+<li>数据写入IO磁盘随机性过大，且索引效率下降</li>
+<li>字符串没有任何含义，不能提现业务的有效信息</li>
 </ol>
-<p>只有当内存地址的值等于预期值时，才会用原子的方式把内存中的值修改为更新值。比较+更新是一个原子操作。</p>
-<h2 id="CAS原理"><a href="#CAS原理" class="headerlink" title="CAS原理"></a>CAS原理</h2><p><img src="/2020/01/11/java-cas/image-20200430212433774.png" alt></p>
-<p>我们以AtomicInteger为例，</p>
-<p><img src="/2020/01/11/java-cas/image-20200430215459607.png" alt></p>
-<p>可以看到主要有:</p>
+<h3 id="基于数据库自增ID"><a href="#基于数据库自增ID" class="headerlink" title="基于数据库自增ID"></a>基于数据库自增ID</h3><p>数据库自增ID可以作为分布式ID，具体实现是：需要有一个单独的mysql实例用来生成ID，当需要一个ID时，就往表里面插一条数据返回一个主键ID。</p>
+<p>但是缺点也很明显：</p>
 <ol>
-<li>unsafe : 获取并操作内存的数据</li>
-<li>valueOffset ：内存中的偏移量</li>
-<li>value : volatile修饰的int值，从而保证其在线程间的可见性。</li>
+<li>在访问量激增的时候，mysql很可能成为整个系统的性能瓶颈。</li>
+<li>单实例存在宕机风险。</li>
 </ol>
-<p>观察其<strong><em>incrementAndGet</em></strong>方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.getAndAddInt(<span class="keyword">this</span>, valueOffset, <span class="number">1</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里使用到<strong>Unsafe类</strong>。Unsafe类是CAS的核心类，AtomicInteger类就是靠Unsafe完成CAS操作。</p>
-<p>我们知道 在Java中，我们是无法直接访问到操作系统的，只能通过本地方法来访问。本地方法不是使用Java实现的，是由C/C++语言在另外的文件中编写，遵循Java本地接口的规范（简称JNI）。但是Java提供Unsafe类可以实现硬件级别的原子操作。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//sun.misc.Unsafe#getAndAddInt</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object var1, <span class="keyword">long</span> var2, <span class="keyword">int</span> var4)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> var5;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        var5 = <span class="keyword">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">    &#125; <span class="keyword">while</span>(!<span class="keyword">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//// ------------------------- OpenJDK 8 -------------------------</span></span><br><span class="line"><span class="comment">// Unsafe.java</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object o, <span class="keyword">long</span> offset, <span class="keyword">int</span> delta)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">int</span> v;</span><br><span class="line">   <span class="keyword">do</span> &#123;</span><br><span class="line">       v = getIntVolatile(o, offset);</span><br><span class="line">   &#125; <span class="keyword">while</span> (!compareAndSwapInt(o, offset, v, v + delta));</span><br><span class="line">   <span class="keyword">return</span> v;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过OpenJDK 8的源码我们可以看出，不断取出对象o在内存偏移量offset处的值，判断内存中的值是否等于v，如果等于则把内存中的值设置为 v + delta，否则返回false，循环继续执行，直到设置成功后退出并返回旧值。整个比较+更新的操作封装在<strong><em>compareAndSwapInt</em></strong>中，在JNI中，是通过一个cpu指令完成的，属于原子操作，所以可以保证多个线程能够看到同一个变量的修改值。</p>
-<p>通过查看Hotspot源码，在Unsafe.cpp类中最终是调用了 <strong><em>Atomic::cmpxchg</em></strong>方法。<strong><em>Atomic::cmpxchg</em></strong>在不同平台上有不同的实现 （这里就涉及到知识盲区），总之<strong>JDK通过CPU的cmpxchgl指令的支持，实现AtomicInteger的CAS操作的原子性</strong>。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSwapInt(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jint e, jint x))</span><br><span class="line">  UnsafeWrapper(<span class="string">"Unsafe_CompareAndSwapInt"</span>);</span><br><span class="line">  oop p = JNIHandles::resolve(obj);</span><br><span class="line">  jint* addr = (jint *) index_oop_from_field_offset_long(p, offset);</span><br><span class="line">  <span class="keyword">return</span> (jint)(Atomic::cmpxchg(x, addr, e)) == e;</span><br><span class="line">UNSAFE_END</span><br></pre></td></tr></table></figure>
-
-<h3 id="CAS的问题"><a href="#CAS的问题" class="headerlink" title="CAS的问题"></a>CAS的问题</h3><p>CAS虽好，但是也存在着一些问题，例如：</p>
+<h3 id="基于数据库集群模式"><a href="#基于数据库集群模式" class="headerlink" title="基于数据库集群模式"></a>基于数据库集群模式</h3><p>对于上面方案单机节点容易宕机的风险，可以进行一些高可用优化 ，换成主从模式。如果害怕一个主节点挂掉，可以做双主模式集群，这样两个mysql实例都可以单独生成自增ID。</p>
+<p>具体实现是：</p>
 <ol>
-<li>循环时间不确定，有可能太长。如果while循环一直不能退出，那么就会给cpu带来很大开销。JUC中有些地方就限制了CAS自旋的次数，例如阻塞队列中的SynchronousQueue，如果cpu数量大于等于2则默认32*16次，否则为0。</li>
+<li>设置起始值与自增步长。即实例1设置起始值为1，步长为5，实例而设置起始值为2，步长为5.</li>
 </ol>
-<p><img src="/2020/01/11/java-cas/image-20200430223919655.png" alt="SynchronousQueue"></p>
-<ol start="2">
-<li>只能保证一个共享变量原子操作。对一个共享变量操作时，cas能保证原子操作，但对多个共享变量操作时，cas是无法保证操作的原子性的。但是JDK1.5之后提供了<strong>AtomicReference</strong>类来保证引用对象之间的原子性，可以把多个变量放在一个对象里面进行CAS操作。</li>
-<li>ABA问题。通俗就是将内存的值是A，后来变成了B，然后又变成了A，cas检查发现没有变化，实际上是有变化的。解决办法就是添加版本号，JDK1.5之后提供AtomicStampedReference类来解决ABA问题，通过标记stamp来代表版本号。</li>
-</ol>
-<h2 id="Unsafe类"><a href="#Unsafe类" class="headerlink" title="Unsafe类"></a>Unsafe类</h2><p>Unsafe类是位于sun.misc包下的类，主要用于执行一些不安全的操作，例如直接访问操作系统资源。</p>
-<p>我们一般开发不会用到，JDK1.9之前可以通过反射来获取单例对象。</p>
-<p>主要功能：</p>
+<p>但是缺点就是不利于后续扩容，当需要扩容的时候，需要修改之前机器的步长。</p>
+<h3 id="基于数据库的号段模式"><a href="#基于数据库的号段模式" class="headerlink" title="基于数据库的号段模式"></a>基于数据库的号段模式</h3><p>这种方案更加取巧，即每次从数据库中批量获取自增ID，比如获取一个号段范围，例如1—1000。将这段自增ID加载到内存中使用。当这批号段使用完毕后，再次向数据库申请新的号段，修改max_id字段。</p>
+<p><img src="/2020/08/20/distributed-id/image-20210120095413984.png" alt></p>
+<p>这样使得不会频繁访问数据库，对数据库压力小很多。</p>
+<h3 id="基于Redis方案"><a href="#基于Redis方案" class="headerlink" title="基于Redis方案"></a>基于Redis方案</h3><p>利用Redis的incr命令实现ID的原子自增。这也是最常见的方案。</p>
+<p>需要考虑的是有补偿机制，万一redis出现宕机，补偿机制可以使得服务可用性不会下降。例如使用数据库作为后备方案。</p>
+<h3 id="基于雪花算法模式"><a href="#基于雪花算法模式" class="headerlink" title="基于雪花算法模式"></a>基于雪花算法模式</h3><p>雪花算法是Twitter开源的分布式ID生成算法。</p>
+<p>雪花算法生成的Long类型的ID，组成是0：1位固定开头0+41位的时间戳+5位机器ID+5位数据中心+12位自增值。</p>
+<p>但是存在着问题：</p>
 <ol>
-<li>进行内存分配、拷贝等操作。例如：堆外内存DirectByteBuffer，在通信中用做缓冲池，在Netty等NIO框架中广泛使用。</li>
-<li>CAS相关操作。例如我们上面所说的原子类。</li>
-<li>线程调度。例如JUC中锁使用中线程的阻塞唤醒就是通过LockSupport实现的。LockSupport实际上是通过调用Unsafe的park、unpark方式来实现的。</li>
-<li>Class相关。</li>
+<li>时间回拨。当机器的时间跑到之前几毫秒，这种情况下可能出现数据重复的问题。</li>
+<li>机器id上线。这个倒问题不大，1024台机器目前是够用的。</li>
 </ol>
-<p>等等……..</p>
-<p>就不过多涉及了，因为这个类一般我们也用不到，已经超出我的理解能力了~<img src="/2020/01/11/java-cas/012743C4.png" alt></p>
+<p>解决办法有：</p>
+<ol>
+<li>采用<strong>历史时间</strong>，当进程启动后，以当前时间作为这台机器进程的时间戳中起始时间字段，后续自增是在序列号自增到最大值的时候增加1，而序列号重新归0。</li>
+</ol>
+<h3 id="百度基于雪花算法"><a href="#百度基于雪花算法" class="headerlink" title="百度基于雪花算法"></a>百度基于雪花算法</h3><p>uid-generator基于雪花算法，与原始不同的是，uid-generator支持自定义位数。</p>
+<h3 id="美团Leaf"><a href="#美团Leaf" class="headerlink" title="美团Leaf"></a>美团Leaf</h3><p>Leaf支持号段模式、雪花算法模式，可以切换使用。</p>
+<p>Leaf的雪花模式依赖于ZK，其中的机器id是基于zk的顺序ID来生成的。Leaf解决时钟回拨是一直等回拨导致重复的时间过去。</p>
 <blockquote>
-<p>参考列表</p>
+<p>参考列表：</p>
 <ol>
-<li><a href="https://tech.meituan.com/2018/11/15/java-lock.html" target="_blank" rel="noopener">https://tech.meituan.com/2018/11/15/java-lock.html</a></li>
-<li><a href="https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html" target="_blank" rel="noopener">https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html</a></li>
-<li><a href="https://juejin.im/post/5a73cbbff265da4e807783f5" target="_blank" rel="noopener">https://juejin.im/post/5a73cbbff265da4e807783f5</a></li>
+<li><a href="https://juejin.cn/post/6844904065747402759" target="_blank" rel="noopener">https://juejin.cn/post/6844904065747402759</a></li>
 </ol>
 </blockquote>
 
@@ -353,7 +345,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8FID/" rel="tag"># 分布式ID</a>
           </div>
 
         
@@ -362,13 +354,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/04/java-synchronized/" rel="prev" title="搞懂Java多线程系列之Synchronized">
-      <i class="fa fa-chevron-left"></i> 搞懂Java多线程系列之Synchronized
+    <a href="/2020/08/02/spring-summary/" rel="prev" title="Spring之常见问题总结">
+      <i class="fa fa-chevron-left"></i> Spring之常见问题总结
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/01/18/java-volatile/" rel="next" title="深入JVM之Java线程模型">
-      深入JVM之Java线程模型 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -428,7 +417,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是CAS"><span class="nav-number">1.</span> <span class="nav-text">什么是CAS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAS原理"><span class="nav-number">2.</span> <span class="nav-text">CAS原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAS的问题"><span class="nav-number">2.1.</span> <span class="nav-text">CAS的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Unsafe类"><span class="nav-number">3.</span> <span class="nav-text">Unsafe类</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#UUID"><span class="nav-number">1.</span> <span class="nav-text">UUID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于数据库自增ID"><span class="nav-number">2.</span> <span class="nav-text">基于数据库自增ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于数据库集群模式"><span class="nav-number">3.</span> <span class="nav-text">基于数据库集群模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于数据库的号段模式"><span class="nav-number">4.</span> <span class="nav-text">基于数据库的号段模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于Redis方案"><span class="nav-number">5.</span> <span class="nav-text">基于Redis方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#基于雪花算法模式"><span class="nav-number">6.</span> <span class="nav-text">基于雪花算法模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#百度基于雪花算法"><span class="nav-number">7.</span> <span class="nav-text">百度基于雪花算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#美团Leaf"><span class="nav-number">8.</span> <span class="nav-text">美团Leaf</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
