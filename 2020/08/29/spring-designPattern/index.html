@@ -21,24 +21,19 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
+  <meta name="description" content="之前阅读Spring源码，看到了太多设计模式实际用法，加上今天正好看到一篇文章总结Spring中的设计模式。 好记性不如烂笔头，学习汲取收为己用~ 哈哈哈~">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java基础之CAS">
-<meta property="og:url" content="http://yoursite.com/2020/01/11/java-cas/index.html">
+<meta property="og:title" content="Spring之设计模式">
+<meta property="og:url" content="http://yoursite.com/2020/08/29/spring-designPattern/index.html">
 <meta property="og:site_name" content="Lcccc">
-<meta property="og:description" content="前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430212433774.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430215459607.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430223919655.png">
-<meta property="og:image" content="http://yoursite.com/2020/01/11/java-cas/012743C4.png">
-<meta property="article:published_time" content="2020-01-11T11:56:37.000Z">
-<meta property="article:modified_time" content="2021-01-15T14:27:43.197Z">
+<meta property="og:description" content="之前阅读Spring源码，看到了太多设计模式实际用法，加上今天正好看到一篇文章总结Spring中的设计模式。 好记性不如烂笔头，学习汲取收为己用~ 哈哈哈~">
+<meta property="article:published_time" content="2020-08-29T02:59:24.000Z">
+<meta property="article:modified_time" content="2021-01-21T04:12:18.289Z">
 <meta property="article:author" content="Lcc">
-<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://yoursite.com/2020/01/11/java-cas/image-20200430212433774.png">
 
-<link rel="canonical" href="http://yoursite.com/2020/01/11/java-cas/">
+<link rel="canonical" href="http://yoursite.com/2020/08/29/spring-designPattern/">
 
 
 <script id="page-configurations">
@@ -51,7 +46,7 @@
   };
 </script>
 
-  <title>Java基础之CAS | Lcccc</title>
+  <title>Spring之设计模式 | Lcccc</title>
   
 
 
@@ -211,7 +206,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/11/java-cas/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/spring-designPattern/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -224,7 +219,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Java基础之CAS
+          Spring之设计模式
         </h1>
 
         <div class="post-meta">
@@ -234,7 +229,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-11 19:56:37" itemprop="dateCreated datePublished" datetime="2020-01-11T19:56:37+08:00">2020-01-11</time>
+              <time title="创建时间：2020-08-29 10:59:24" itemprop="dateCreated datePublished" datetime="2020-08-29T10:59:24+08:00">2020-08-29</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -242,7 +237,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">Java基础</span></a>
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
                 </span>
             </span>
 
@@ -255,8 +250,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2020/01/11/java-cas/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2020/01/11/java-cas/" itemprop="commentCount"></span>
+    <a title="valine" href="/2020/08/29/spring-designPattern/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/08/29/spring-designPattern/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -266,14 +261,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
+              <span>3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -285,63 +280,119 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前面我们讲了Synchronized关键字。如果从锁的分类上来看，Synchronized以及后面要讲到的Lock都属于一种悲观锁。那Java中存在乐观锁吗？答案是存在的。乐观锁在Java中是通过使用无锁编程来实现的，最常用的就是CAS算法，JUC下的原子类的递增操作就是通过CAS自旋实现的，并且可以说CAS是整个JUC的核心。</p>
+        <p>之前阅读Spring源码，看到了太多设计模式实际用法，加上今天正好看到一篇文章总结Spring中的设计模式。</p>
+<p>好记性不如烂笔头，学习汲取收为己用~</p>
+<p>哈哈哈~</p>
 <a id="more"></a>
 
-<h2 id="什么是CAS"><a href="#什么是CAS" class="headerlink" title="什么是CAS"></a>什么是CAS</h2><p>CAS，全称是Compare and Swap。比较交换，在不使用锁的情况下实现多线程之间的变量同步。</p>
-<p>CAS算法涉及到三个值：</p>
-<ol>
-<li>内存地址</li>
-<li>预期值</li>
-<li>更新值</li>
-</ol>
-<p>只有当内存地址的值等于预期值时，才会用原子的方式把内存中的值修改为更新值。比较+更新是一个原子操作。</p>
-<h2 id="CAS原理"><a href="#CAS原理" class="headerlink" title="CAS原理"></a>CAS原理</h2><p><img src="/2020/01/11/java-cas/image-20200430212433774.png" alt></p>
-<p>我们以AtomicInteger为例，</p>
-<p><img src="/2020/01/11/java-cas/image-20200430215459607.png" alt></p>
-<p>可以看到主要有:</p>
-<ol>
-<li>unsafe : 获取并操作内存的数据</li>
-<li>valueOffset ：内存中的偏移量</li>
-<li>value : volatile修饰的int值，从而保证其在线程间的可见性。</li>
-</ol>
-<p>观察其<strong><em>incrementAndGet</em></strong>方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unsafe.getAndAddInt(<span class="keyword">this</span>, valueOffset, <span class="number">1</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里使用到<strong>Unsafe类</strong>。Unsafe类是CAS的核心类，AtomicInteger类就是靠Unsafe完成CAS操作。</p>
-<p>我们知道 在Java中，我们是无法直接访问到操作系统的，只能通过本地方法来访问。本地方法不是使用Java实现的，是由C/C++语言在另外的文件中编写，遵循Java本地接口的规范（简称JNI）。但是Java提供Unsafe类可以实现硬件级别的原子操作。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//sun.misc.Unsafe#getAndAddInt</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object var1, <span class="keyword">long</span> var2, <span class="keyword">int</span> var4)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> var5;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        var5 = <span class="keyword">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">    &#125; <span class="keyword">while</span>(!<span class="keyword">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//// ------------------------- OpenJDK 8 -------------------------</span></span><br><span class="line"><span class="comment">// Unsafe.java</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object o, <span class="keyword">long</span> offset, <span class="keyword">int</span> delta)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">int</span> v;</span><br><span class="line">   <span class="keyword">do</span> &#123;</span><br><span class="line">       v = getIntVolatile(o, offset);</span><br><span class="line">   &#125; <span class="keyword">while</span> (!compareAndSwapInt(o, offset, v, v + delta));</span><br><span class="line">   <span class="keyword">return</span> v;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过OpenJDK 8的源码我们可以看出，不断取出对象o在内存偏移量offset处的值，判断内存中的值是否等于v，如果等于则把内存中的值设置为 v + delta，否则返回false，循环继续执行，直到设置成功后退出并返回旧值。整个比较+更新的操作封装在<strong><em>compareAndSwapInt</em></strong>中，在JNI中，是通过一个cpu指令完成的，属于原子操作，所以可以保证多个线程能够看到同一个变量的修改值。</p>
-<p>通过查看Hotspot源码，在Unsafe.cpp类中最终是调用了 <strong><em>Atomic::cmpxchg</em></strong>方法。<strong><em>Atomic::cmpxchg</em></strong>在不同平台上有不同的实现 （这里就涉及到知识盲区），总之<strong>JDK通过CPU的cmpxchgl指令的支持，实现AtomicInteger的CAS操作的原子性</strong>。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSwapInt(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jint e, jint x))</span><br><span class="line">  UnsafeWrapper(<span class="string">"Unsafe_CompareAndSwapInt"</span>);</span><br><span class="line">  oop p = JNIHandles::resolve(obj);</span><br><span class="line">  jint* addr = (jint *) index_oop_from_field_offset_long(p, offset);</span><br><span class="line">  <span class="keyword">return</span> (jint)(Atomic::cmpxchg(x, addr, e)) == e;</span><br><span class="line">UNSAFE_END</span><br></pre></td></tr></table></figure>
-
-<h3 id="CAS的问题"><a href="#CAS的问题" class="headerlink" title="CAS的问题"></a>CAS的问题</h3><p>CAS虽好，但是也存在着一些问题，例如：</p>
-<ol>
-<li>循环时间不确定，有可能太长。如果while循环一直不能退出，那么就会给cpu带来很大开销。JUC中有些地方就限制了CAS自旋的次数，例如阻塞队列中的SynchronousQueue，如果cpu数量大于等于2则默认32*16次，否则为0。</li>
-</ol>
-<p><img src="/2020/01/11/java-cas/image-20200430223919655.png" alt="SynchronousQueue"></p>
-<ol start="2">
-<li>只能保证一个共享变量原子操作。对一个共享变量操作时，cas能保证原子操作，但对多个共享变量操作时，cas是无法保证操作的原子性的。但是JDK1.5之后提供了<strong>AtomicReference</strong>类来保证引用对象之间的原子性，可以把多个变量放在一个对象里面进行CAS操作。</li>
-<li>ABA问题。通俗就是将内存的值是A，后来变成了B，然后又变成了A，cas检查发现没有变化，实际上是有变化的。解决办法就是添加版本号，JDK1.5之后提供AtomicStampedReference类来解决ABA问题，通过标记stamp来代表版本号。</li>
-</ol>
-<h2 id="Unsafe类"><a href="#Unsafe类" class="headerlink" title="Unsafe类"></a>Unsafe类</h2><p>Unsafe类是位于sun.misc包下的类，主要用于执行一些不安全的操作，例如直接访问操作系统资源。</p>
-<p>我们一般开发不会用到，JDK1.9之前可以通过反射来获取单例对象。</p>
-<p>主要功能：</p>
-<ol>
-<li>进行内存分配、拷贝等操作。例如：堆外内存DirectByteBuffer，在通信中用做缓冲池，在Netty等NIO框架中广泛使用。</li>
-<li>CAS相关操作。例如我们上面所说的原子类。</li>
-<li>线程调度。例如JUC中锁使用中线程的阻塞唤醒就是通过LockSupport实现的。LockSupport实际上是通过调用Unsafe的park、unpark方式来实现的。</li>
-<li>Class相关。</li>
-</ol>
-<p>等等……..</p>
-<p>就不过多涉及了，因为这个类一般我们也用不到，已经超出我的理解能力了~<img src="/2020/01/11/java-cas/012743C4.png" alt></p>
+<h3 id="简单工厂（非23中设计模式中的一种）"><a href="#简单工厂（非23中设计模式中的一种）" class="headerlink" title="简单工厂（非23中设计模式中的一种）"></a>简单工厂（非23中设计模式中的一种）</h3><p>具体实现例子：</p>
+<ul>
+<li>BeanFactory。Spring中的BeanFactory就是简单工厂模式的体现。根据传入的唯一标识来获得Bead对象。</li>
+</ul>
+<p>实质：</p>
+<ul>
+<li>由一个工厂类根据传入的参数，来动态决定应该创建哪一个产品类。</li>
+</ul>
+<p>实现原理：</p>
+<ul>
+<li>IOC容器启动阶段：<ul>
+<li>将bean的xml配置文件有资源定位器ResourceLoad进行加载为抽象的资源类Resource。当初始化BeanDefinitionReader时，定义ResourceLoad，当执行loadBeanDefinition时，将Resource根据id、name属性等解析为BeanDefinition，并且经过BeanDefinitionHolder包装后返回。</li>
+<li>由BeanDefinitionRegister对BeanDefinitionHolder中的BeanDefiniton进行注册到IOC容器中，IOC容器是通过一个ConcurrentHashMap来管理这些BeanDefinition。</li>
+<li>注册到IOC容器后，spring提供了一个扩展接口，允许通过实现接口BeanFactoryPostProcessor来对BeanDefiniton进行最后一次修改。</li>
+</ul>
+</li>
+<li>但通过<strong>BeanFactory</strong>执行getBean方法时，才会开始bean的实例化过程。<ul>
+<li>doGetBean方法实现的，首先尝试从getSinleton()方法里面获取bean，这个方法主要是从三级缓存中取bean。</li>
+<li>如果没取到，则获取BeanDefinition信息，进行校验，然后根据单例还是原型执行不同方法，以单例为例，执行getSingleton方法，回调createBean方法。在实例化之前会给BeanPostProcessor返回一个代理对象的机会。</li>
+<li>随后执行doCreateBean方法实例化bean。实例化bean会创建一个BeanWrapper对象，这是BeanDefinition到Bean的一个中间产物，通过这个BeanWrapper进行属性填充。</li>
+<li>最后进行初始化bean，激活Aware接口，执行BeanPostProcessor前置处理器，判断是否实现InitializingBean，是的话执行afterPropertiesSet方法，判断有没有init-method，最后执行Bpp的后置处理器。这里也就是AOP实现的原理。</li>
+<li>最后就能获取实例化的对象。</li>
+</ul>
+</li>
+</ul>
+<h3 id="工厂方法"><a href="#工厂方法" class="headerlink" title="工厂方法"></a>工厂方法</h3><p>具体实现例子：</p>
+<ul>
+<li>FactoryBean接口。</li>
+</ul>
+<p>实现原理：</p>
+<ul>
+<li>实现了FactoryBean接口的bean是一类叫做factory的bean，它的主要特点是：spring会在使用getBean()调用获取该bean时，自动调用该bean的getObject()方法，所以返回的不是factory这个bean，而是这个bean.getObject()方法的返回值。</li>
+</ul>
+<p>具体实例：</p>
+<ul>
+<li>spring中的proxyFactoryBean</li>
+<li>mybati中的SqlsessionFactoryBean</li>
+</ul>
+<h3 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h3><p>Spring依赖注入的bean实例默认都是单例的。</p>
+<p>Spring的依赖注入都是发生在BeanFactory的getBean中，执行doGetBean方法调用getSingletion方法进行bean的创建。</p>
+<h3 id="适配器模式"><a href="#适配器模式" class="headerlink" title="适配器模式"></a>适配器模式</h3><p>具体实现例子：</p>
+<ul>
+<li>Spring AOP中的适配器AdvisorAdapter。</li>
+<li>SpringMVC中的适配器HandlerAdatper。</li>
+</ul>
+<p>实现原理：</p>
+<ul>
+<li>HandlerAdatper根据handler规则执行不同的Handler。</li>
+<li>AdvisorAdapter根据不同的advisor生成不同的MethodInterceptor。</li>
+</ul>
+<p>适配器模式使得扩展变得容易，只需要增加一个新的Handler和一个对应的HandlerAdapter即可。</p>
+<h3 id="装饰器模式"><a href="#装饰器模式" class="headerlink" title="装饰器模式"></a>装饰器模式</h3><p>具体实现例子：</p>
+<ul>
+<li>Spring中用到的装饰器模式在类名上有两种表现：一种是类名中含有Wrapper，另一种是类名中含有Decorator。例如BeanWrapper等。</li>
+</ul>
+<p>好处就是可以动态的给一个对象添加一种额外的职责。</p>
+<h3 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h3><p>具体实现例子：</p>
+<ul>
+<li>AOP的底层原理就是动态代理的实现。</li>
+</ul>
+<p>包括动态代理、静态代理。Spring中的两种动态代理模式包括JDK动态代理和CGLIB动态代理。</p>
+<h3 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a>观察者模式</h3><p>具体实现例子:</p>
+<ul>
+<li>Spring中的事件驱动模型使用的是 观察者模式，例如listener的实现。</li>
+</ul>
+<p>实现原理：</p>
+<p>​    事件机制的实现需要三个部分：事件源、事件、事件监听器。</p>
+<ul>
+<li><p><strong>事件</strong>：ApplicationEvent抽象类、</p>
+<p>继承自JDK的EventObject，所有的事件都需要继承ApplicationEvent，并通过构造器参数source得到事件源。例如：该类的实现类ApplicationContextEvent表示ApplicationContext的容器事件。</p>
+</li>
+<li><p><strong>事件监听器</strong>：ApplicationListenner接口</p>
+<p>继承自jdk的EventListener，所有的监听器都要实现这个接口。ApplicationListener接口只有一个方法，该方法接受一个ApplicationEvent或者其子对象作为参数，可以通过不同对Event类的判断来进行相应的处理。</p>
+</li>
+<li><p><strong>事件源</strong>：ApplicationContext接口。</p>
+<p>ApplicaitonContext是spring的全局容器，实现了ApplicationEventPublisher接口，属于事件广播器，作用是把ApplicationContext发布的Event广播给所有监听器。</p>
+</li>
+</ul>
+<h3 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h3><p>具体实现例子：</p>
+<ul>
+<li><p>Spring框架的统一资源访问Resource接口。该接口提供了更强的资源访问能力。</p>
+<p>Rsource接口本身没有提供任何访问底层资源的实现逻辑，根据不同的底层资源，Sprign提供了不同的Resource实现类，不同的实现类负责不同的资源访问逻辑，例如：</p>
+<ul>
+<li>UrlReosurce: 访问网络资源类的实现类</li>
+<li>ClassPathResource: 访问类加载路径里资源的实现类。</li>
+<li>FileSystemResource: 访问文件系统里的资源实现类</li>
+<li>ServeltContextResource: 访问相对于ServletContext路径中的资源的实现类</li>
+<li>InputSteamReosurce: 访问输入流资源的实现类</li>
+<li>ByteArrayResource: 访问字节数组资源的实现类。</li>
+</ul>
+</li>
+</ul>
+<h3 id="模板方法模式"><a href="#模板方法模式" class="headerlink" title="模板方法模式"></a>模板方法模式</h3><p>父类定义骨架，调用哪些方法、顺序，某些特定方法由子类实现。好处就是：代码复用，除了子类要实现的特定方法，其他方法 及方法调用顺序都在父类预先写好了。</p>
+<p>父类模板方法中有两类方法：</p>
+<ul>
+<li>共同的方法：所有子类都会用到代码</li>
+<li>不同的方法：子类要覆盖的方法，分为两种：<ul>
+<li>抽象方法：父类中的是抽象方法，子类必须覆盖</li>
+<li>钩子方法：父类中空方法，子类继承默认也是空的，<strong>子类可以通过这个钩子方法控制父类</strong>。</li>
+</ul>
+</li>
+</ul>
+<p>具体实例：</p>
+<p>​    Spring几乎所有的外接扩展都是采用这种模式。例如：JDBK的抽象和对Hibernate的集成。</p>
 <blockquote>
-<p>参考列表</p>
+<p>参考列表：</p>
 <ol>
-<li><a href="https://tech.meituan.com/2018/11/15/java-lock.html" target="_blank" rel="noopener">https://tech.meituan.com/2018/11/15/java-lock.html</a></li>
-<li><a href="https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html" target="_blank" rel="noopener">https://tech.meituan.com/2019/02/14/talk-about-java-magic-class-unsafe.html</a></li>
-<li><a href="https://juejin.im/post/5a73cbbff265da4e807783f5" target="_blank" rel="noopener">https://juejin.im/post/5a73cbbff265da4e807783f5</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Ik6LvOrTX4fwg2VCIId7_Q" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/Ik6LvOrTX4fwg2VCIId7_Q</a></li>
 </ol>
 </blockquote>
 
@@ -353,7 +404,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Spring/" rel="tag"># Spring</a>
           </div>
 
         
@@ -362,13 +413,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/04/java-synchronized/" rel="prev" title="搞懂Java多线程系列之Synchronized">
-      <i class="fa fa-chevron-left"></i> 搞懂Java多线程系列之Synchronized
+    <a href="/2020/08/22/middleware-mq/" rel="prev" title="MQ常见问题">
+      <i class="fa fa-chevron-left"></i> MQ常见问题
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/01/18/java-volatile/" rel="next" title="深入JVM之Java线程模型">
-      深入JVM之Java线程模型 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -428,7 +476,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是CAS"><span class="nav-number">1.</span> <span class="nav-text">什么是CAS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAS原理"><span class="nav-number">2.</span> <span class="nav-text">CAS原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAS的问题"><span class="nav-number">2.1.</span> <span class="nav-text">CAS的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Unsafe类"><span class="nav-number">3.</span> <span class="nav-text">Unsafe类</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#简单工厂（非23中设计模式中的一种）"><span class="nav-number">1.</span> <span class="nav-text">简单工厂（非23中设计模式中的一种）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#工厂方法"><span class="nav-number">2.</span> <span class="nav-text">工厂方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#单例模式"><span class="nav-number">3.</span> <span class="nav-text">单例模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#适配器模式"><span class="nav-number">4.</span> <span class="nav-text">适配器模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#装饰器模式"><span class="nav-number">5.</span> <span class="nav-text">装饰器模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代理模式"><span class="nav-number">6.</span> <span class="nav-text">代理模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#观察者模式"><span class="nav-number">7.</span> <span class="nav-text">观察者模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#策略模式"><span class="nav-number">8.</span> <span class="nav-text">策略模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#模板方法模式"><span class="nav-number">9.</span> <span class="nav-text">模板方法模式</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
