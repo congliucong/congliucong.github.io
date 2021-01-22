@@ -278,33 +278,14 @@
 
       
           <p>这里主要对2021面试过程中的一些问题记性总结记录。</p>
-<h3 id="2021-01-22更新"><a href="#2021-01-22更新" class="headerlink" title="2021.01.22更新"></a>2021.01.22更新</h3><p>今天面试过程中，有些知识点忘记了，只能回答个某个点出来，不够全面</p>
-<h4 id="volatile的原理是什么？"><a href="#volatile的原理是什么？" class="headerlink" title="volatile的原理是什么？"></a>volatile的原理是什么？</h4><p>volatile是java提供的最轻量级的同步机制，作用主要有保证变量<strong>可见性</strong>和<strong>禁止指令重排序</strong>。                                                                                                                                                                                                                                                                                                                                </p>
-<p>原理是：</p>
-<ul>
-<li>查看字节码文件，发现被volatile修饰的变量，字节码中会多一个ACC_VOLATILE的标识。即在执行的时候，被volatile修饰的变量，赋值后多了一个“lock add”的操作。这个操作相当于一个内存屏障（作用是指令排序时不能把后面的指令到内存屏障之前的位置）。只有一个处理器访问内存的时候，并不需要内存屏障，如果两个或者多个处理器访问同一块内存时，且其中有一个在观测另一个，那么就需要内存屏障来保证一致性。</li>
-<li>lock前缀作用是将本处理器的缓存写入内存，写入动作也会引起别的处理器或者别的内核无效化其内存，即修改对其他处理器立即可见。</li>
-<li>lock add指令把修改同步到内存时，意味着所有之前的操作都已经执行完成，也就是实现了“指令重排序无法越过内存屏障”的效果。</li>
-</ul>
-<h4 id="JMM有什么意义？MESI各指的是什么？"><a href="#JMM有什么意义？MESI各指的是什么？" class="headerlink" title="JMM有什么意义？MESI各指的是什么？"></a>JMM有什么意义？MESI各指的是什么？</h4><p>JMM是Java内存模型，作用以及意义是：硬件层面的原子性、有序性、可见性在不同cpu架构和操作系统中的实现都可能不一样，而Java语言特性是：write once，run anywhere，意味着JVM层面屏蔽各种硬件和操作系统的内存访问差异的一种规范，以实现Java程序在各种平台下都能达到一致的内存访问效果。</p>
-<p>MESI是<strong>缓存一致性协议</strong>。</p>
-<ul>
-<li>M即Modify，表示共享数据只缓存在当前cpu中， 且是修改的状态，也就是说缓存的数据跟主内存的数据不一致。</li>
-<li>E即Exclusive表示缓存是独占状态，数据只缓存在当前cpu缓存中，并且没有被修改。.</li>
-<li>S即Shared，表示数据可能被多个cpu缓存，并且各个缓存中的数据与主内存数据一致。</li>
-<li>I即Invalid，表示缓存已经失效。</li>
-</ul>
-<h4 id="手写一个Double-Check"><a href="#手写一个Double-Check" class="headerlink" title="手写一个Double Check?"></a>手写一个Double Check?</h4><p>诶，这个知道先用synchronized加锁，随后if判断是否为null。但还是没写出来，忘记了。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> Singleton singleton;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getNewInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(singleton ==  <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span>(Singleton<span class="class">.<span class="keyword">class</span>)</span>&#123;</span><br><span class="line">                <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="zookeeper临时节点下面可否再挂子节点？"><a href="#zookeeper临时节点下面可否再挂子节点？" class="headerlink" title="zookeeper临时节点下面可否再挂子节点？"></a>zookeeper临时节点下面可否再挂子节点？</h4><p>这个问题还真不会。答案是：临时节点不能有子节点，如果给临时节点创建子节点，会抛出KeeperException异常。</p>
-<p>pom中引入最新的ZK jar包，用源码说话。</p>
-<p><img src="/2021/01/23/interview-2021/image-20210123003332262.png" alt></p>
-<p><img src="/2021/01/23/interview-2021/image-20210123003448930.png" alt></p>
-<p>框起来的部分写着：<strong>临时节点不允许有子节点，如果创建节点的路径上是一个临时节点，那么会抛出KeeperException异常</strong>。</p>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/01/23/interview-2021/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
