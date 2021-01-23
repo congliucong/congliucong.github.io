@@ -29,8 +29,9 @@
 <meta property="og:description" content="这里主要对2021面试过程中的一些问题记性总结记录。">
 <meta property="og:image" content="http://yoursite.com/2021/01/23/interview-2021/image-20210123003332262.png">
 <meta property="og:image" content="http://yoursite.com/2021/01/23/interview-2021/image-20210123003448930.png">
+<meta property="og:image" content="http://yoursite.com/2021/01/23/interview-2021/image-20200507203214912.png">
 <meta property="article:published_time" content="2021-01-22T16:36:25.000Z">
-<meta property="article:modified_time" content="2021-01-22T16:46:31.043Z">
+<meta property="article:modified_time" content="2021-01-23T17:41:09.194Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="面试">
 <meta name="twitter:card" content="summary">
@@ -264,14 +265,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.3k</span>
+              <span>4.3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>4 分钟</span>
             </span>
 
         </div>
@@ -307,11 +308,112 @@
 
 
 
-<h4 id="zookeeper临时节点下面可否再挂子节点？"><a href="#zookeeper临时节点下面可否再挂子节点？" class="headerlink" title="zookeeper临时节点下面可否再挂子节点？"></a>zookeeper临时节点下面可否再挂子节点？</h4><p>这个问题还真不会。答案是：临时节点不能有子节点，如果给临时节点创建子节点，会抛出KeeperException异常。</p>
+<p>zookeeper临时节点下面可否再挂子节点？</p>
+<p>这个问题还真不会。答案是：临时节点不能有子节点，如果给临时节点创建子节点，会抛出KeeperException异常。</p>
 <p>pom中引入最新的ZK jar包，用源码说话。</p>
 <p><img src="/2021/01/23/interview-2021/image-20210123003332262.png" alt></p>
 <p><img src="/2021/01/23/interview-2021/image-20210123003448930.png" alt></p>
 <p>框起来的部分写着：<strong>临时节点不允许有子节点，如果创建节点的路径上是一个临时节点，那么会抛出KeeperException异常</strong>。</p>
+<h4 id="ZK中的Watcher机制原理、特点是什么？"><a href="#ZK中的Watcher机制原理、特点是什么？" class="headerlink" title="ZK中的Watcher机制原理、特点是什么？"></a>ZK中的Watcher机制原理、特点是什么？</h4><p>zk提供了分布式数据的发布/订阅功能，而wathcer机制则是用来实现这种分布式的通知功能。</p>
+<p>ZK的Watcher机制主要包括了<strong>客户端线程</strong>、<strong>客户端WatchManager</strong>和<strong>Zookeeper服务器</strong>这三部分。</p>
+<p>工作流程是：</p>
+<ul>
+<li>客户端在向Zookeeper服务器注册Watcher的同时，会将Watcher对象存储在<strong>客户端的WatchManager</strong>中。</li>
+<li>当Zookeeper 服务器触发Watcher事件后，会向客户端发送通知。</li>
+<li>客户端线程<strong>从WatchManager的实现类中取出对应的Watcher对象</strong>来执行回调逻辑。</li>
+</ul>
+<p>Zookeeper的Watcher具有以下几个<strong>特性</strong>：</p>
+<ul>
+<li><strong>一次性</strong><ul>
+<li>无论是服务端还是客户端，一旦一个Watcher被触发，Zookeeper都会将其从相应的存储中移除。</li>
+<li>因此，在Watcher的使用上，需要反复注册，这样的设计有效的减轻了服务端的压力。</li>
+</ul>
+</li>
+<li><strong>客户端串行执行</strong><ul>
+<li>Watcher回调是顺序串行化执行的，只有回调后客户端才能看到最新的数据状态。所以，处理Watcher的回调逻辑不应该太多，以免影响别的watcher执行。</li>
+</ul>
+</li>
+<li><strong>轻量级</strong><ul>
+<li>WatchEvent是最小的通信单元，结构上只包含通知状态、事件类型和节点路径，并不会告诉数据节点变化前后的具体内容。</li>
+</ul>
+</li>
+<li><strong>时效性</strong><ul>
+<li>Wathcher只有在当前session彻底失效时才会无效，若在session有效期内快速重连成功，则watcher依然存在，仍可接收到通知。</li>
+</ul>
+</li>
+</ul>
+<h4 id="ZAB协议知道吗？"><a href="#ZAB协议知道吗？" class="headerlink" title="ZAB协议知道吗？"></a>ZAB协议知道吗？</h4><p>面试的时候问道，虽然之前文章里面也有，但是，哎，老早就忘了是啥东西了，只记得是ZK相关的了。在这里就再进行一下总结吧。</p>
+<p>ZAB全程<strong>Zookpeeper Atomic Broadcat</strong>(Zookeeper原子广播)</p>
+<p>ZAB协议为了实现分布式数据一致性，专门设计的一种支持崩溃恢复的一致性协议。基于该协议，ZK实现了一种主从模式的系统架构来保持集群中各个副本之间的数据一致性。</p>
+<p>ZAB协议中规定所有的写操作都必须通过Leader来完成，因此如果向Follower提交的写请求，会转发到Leader，用我之前的笔记中的图总结就是：</p>
+<p><img src="/2021/01/23/interview-2021/image-20200507203214912.png" alt></p>
+<p>ZAB协议主要包括<strong>消息广播</strong>和<strong>崩溃恢复</strong>。</p>
+<p>具体还是看之前的<a href="https://blog.yzylcc.top/2020/04/20/distributed-zk/" target="_blank" rel="noopener">文章笔记</a>吧。</p>
+<p>其实还有个问题：<strong>为什么说Zookeeper是CAP中的CP？</strong></p>
+<p>首先，ZK在进行leader选举时是不提供对外服务的，所以在CAP中的A可用性就ZK已经不能够保证的。并且对于写操作来说，都将最终转发到Leader上面，所以整体上来说，ZK对外提供的服务可以看做是能够保证一致性的。</p>
+<h4 id="描述一下Redis集群的脑裂情况？怎么解决？"><a href="#描述一下Redis集群的脑裂情况？怎么解决？" class="headerlink" title="描述一下Redis集群的脑裂情况？怎么解决？"></a>描述一下Redis集群的脑裂情况？怎么解决？</h4><p><strong>脑裂指的是</strong>：主从集群中，同时有两个主节点，都能接受写请求。导致的后果就是客户端不知道往哪个主节点写入数据，结果就是不同客户端都会往不同的主节点上写入数据，严重的话脑裂会进一步导致<strong>数据丢失</strong>。</p>
+<p><strong>数据丢失的原因</strong>是：在主从切换后，从库一旦升级为新主库，哨兵会让原主库执行slave of执行，和新主库进行全量同步。而在全量同步执行的最后阶段，原主库需要清空本地数据，加载新主库发送的RDB文件，这样一来，原主库在主从切换期间保存的新写数据就丢失了。</p>
+<p><strong>解决办法</strong>是：Redis提供了min-slaves-to-write 和 min-slaves-max-lag这两个配置项来限制主库的请求处理。</p>
+<ul>
+<li>min-slaves-to-write: 这个配置项设置了主库能进行数据同步的最少从库数量。</li>
+<li>min-slaves-max-lag: 这个配置项设置了主从库间进行数据复制时，从库给主库发送ACK消息的最大延迟。</li>
+</ul>
+<p>即通过这两个配置项，要求主库连接的从库只要收N个从库，和主库进行数据复制时的ACK消息延迟不能超过T秒，这样即便是原主库假故障，那么在假故障期间无法响应哨兵心跳，也不能和从库同步，自然无法和从库进行ACK确认，这样，原主库就会被限制接受客户端请求，客户端就不能原主库中写入新数据。</p>
+<h4 id="Redis的持久化机制有哪些？有什么区别？"><a href="#Redis的持久化机制有哪些？有什么区别？" class="headerlink" title="Redis的持久化机制有哪些？有什么区别？"></a>Redis的持久化机制有哪些？有什么区别？</h4><ul>
+<li>RDB，属于快照模式。</li>
+<li>AOF，AOF机制对每条写入命令作为日志，以append-only的模式写入到日志文件中，在redis重启时，可以通过回放AOF日志中的写入命令来重构整个数据集。</li>
+</ul>
+<p>同时使用RDB和AOF两种持久化机制，Redis重启时，会默认使用AOF来重新构建数据。</p>
+<p><strong>区别</strong>：</p>
+<ul>
+<li>RDB会生成多个文件，每个文件代表某一时刻的快照数据。RDB持久化对外影响很小，如果基于RDB文件恢复redis，速度会很快，但是会丢失某个时间段的数据。适合冷备。</li>
+<li>RDB持久化的过程是：Redis主进程fork一个子进程，子进程进行IO操作来进行持久化，将数据集写到一个临时的RDB文件中，当完成的时候，用新的RDB文件替换旧的RDB。在Linux中，fork一个子进程，这个子进程共享其父类的内存数据，互相彼此不会影响（写时复制机制copy-on-write: fork子进程后，将所有内存页设置为read-only，子进程地址空间指向主进程，即共享主进程内存，当主进程写内存时，检测到内存也是read-only，触发页异常中断，将异常的页复制一份，主子进程各独自持有一份。）</li>
+<li>AOF更好保证数据不丢失，最多会丢失1秒钟的数据，可读性高，适合灾难性的误删除的紧急恢复。</li>
+<li>AOF以append-only的模式写入，也就是追加的方式，没有磁盘寻址开销，写入性能高，文件不容易损坏。即便AOF文件过大，还会进行重写操作。</li>
+</ul>
+<h4 id="springmvc怎么跟spring集成的？（待解决）"><a href="#springmvc怎么跟spring集成的？（待解决）" class="headerlink" title="springmvc怎么跟spring集成的？（待解决）"></a>springmvc怎么跟spring集成的？（待解决）</h4><h4 id="为什么RocketMQ的性能这么高？"><a href="#为什么RocketMQ的性能这么高？" class="headerlink" title="为什么RocketMQ的性能这么高？"></a>为什么RocketMQ的性能这么高？</h4><p><a href="https://blog.csdn.net/hosaos/article/details/105204922这篇文章总结的很好。" target="_blank" rel="noopener">https://blog.csdn.net/hosaos/article/details/105204922这篇文章总结的很好。</a></p>
+<p>概括一下主要是：</p>
+<ul>
+<li><strong>Producer端</strong>：<ul>
+<li><strong>Topic元数据缓存</strong>。</li>
+<li>发送消息时方式有<strong>同步发送</strong>、<strong>异步发送</strong>和<strong>One-Way</strong>。</li>
+<li>发送消息时，如果<strong>Broker</strong>出现故障，那么会记性<strong>故障转移</strong>，避免无用重试。</li>
+</ul>
+</li>
+<li>NameServer端：<ul>
+<li>相当于一个<strong>注册中心</strong>，每个NameServer节点<strong>没有追求强一致性</strong>。</li>
+</ul>
+</li>
+<li><strong>Broker端</strong>：<ul>
+<li><strong>顺序写CommitLog</strong>，没有额外的磁盘寻找消耗。</li>
+<li>使用<strong>自旋锁</strong>实现加锁功能，<strong>避免高并发下写入的上锁解锁效率</strong>，<strong>减少线程上下文切换次数</strong>。</li>
+<li><strong>page cache</strong>，将数据写入内存，标记为脏页，由操作系统将数据刷入磁盘，写磁盘操作变成写内存操作。</li>
+<li><strong>mmap内存映射</strong>。文件映射虚拟内存的技术，将文件在磁盘位置的地址和虚拟内存中的虚拟地址通过映射对应起来，就可以在内存里面读写数据。</li>
+<li><strong>文件预热</strong>。预先做好MappedFile和CommilitLog的映射。</li>
+<li><strong>异步刷盘</strong>，开启参数，消息追加时，放入堆外内存，定时commit。</li>
+<li><strong>零拷贝机制</strong>，避免数据在内核空间缓存区和用户空间缓冲区之间的复制，避免2次cpu的复制。</li>
+<li><strong>读写分离之ConsumerQueue</strong>。MQ持续读取commitLog文件生成ConsumerQueue，消费者先读ConsumerQueue，再读CommitLog。</li>
+<li><strong>消息服务端过滤</strong>。</li>
+</ul>
+</li>
+<li><strong>Comsumer端实现</strong>：<ul>
+<li><strong>长轮询拉取消息</strong>。</li>
+</ul>
+</li>
+<li>其他：<ul>
+<li>线程池隔离</li>
+<li>关闭排向锁</li>
+<li>mq不使用G1等。</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>参考列表</p>
+<ol>
+<li><a href="https://www.cnblogs.com/javazhiyin/p/12985656.html" target="_blank" rel="noopener">https://www.cnblogs.com/javazhiyin/p/12985656.html</a></li>
+<li><a href="https://my.oschina.net/lishangzhi/blog/4742868" target="_blank" rel="noopener">https://my.oschina.net/lishangzhi/blog/4742868</a></li>
+</ol>
+</blockquote>
 
     </div>
 
@@ -393,7 +495,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#2021-01-22更新"><span class="nav-number">1.</span> <span class="nav-text">2021.01.22更新</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#volatile的原理是什么？"><span class="nav-number">1.1.</span> <span class="nav-text">volatile的原理是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JMM有什么意义？MESI各指的是什么？"><span class="nav-number">1.2.</span> <span class="nav-text">JMM有什么意义？MESI各指的是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手写一个Double-Check"><span class="nav-number">1.3.</span> <span class="nav-text">手写一个Double Check?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zookeeper临时节点下面可否再挂子节点？"><span class="nav-number">1.4.</span> <span class="nav-text">zookeeper临时节点下面可否再挂子节点？</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#2021-01-22更新"><span class="nav-number">1.</span> <span class="nav-text">2021.01.22更新</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#volatile的原理是什么？"><span class="nav-number">1.1.</span> <span class="nav-text">volatile的原理是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JMM有什么意义？MESI各指的是什么？"><span class="nav-number">1.2.</span> <span class="nav-text">JMM有什么意义？MESI各指的是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手写一个Double-Check"><span class="nav-number">1.3.</span> <span class="nav-text">手写一个Double Check?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZK中的Watcher机制原理、特点是什么？"><span class="nav-number">1.4.</span> <span class="nav-text">ZK中的Watcher机制原理、特点是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZAB协议知道吗？"><span class="nav-number">1.5.</span> <span class="nav-text">ZAB协议知道吗？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#描述一下Redis集群的脑裂情况？怎么解决？"><span class="nav-number">1.6.</span> <span class="nav-text">描述一下Redis集群的脑裂情况？怎么解决？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的持久化机制有哪些？有什么区别？"><span class="nav-number">1.7.</span> <span class="nav-text">Redis的持久化机制有哪些？有什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#springmvc怎么跟spring集成的？（待解决）"><span class="nav-number">1.8.</span> <span class="nav-text">springmvc怎么跟spring集成的？（待解决）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么RocketMQ的性能这么高？"><span class="nav-number">1.9.</span> <span class="nav-text">为什么RocketMQ的性能这么高？</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -455,12 +557,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">416k</span>
+    <span title="站点总字数">419k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">6:19</span>
+    <span title="站点阅读时长">6:21</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
