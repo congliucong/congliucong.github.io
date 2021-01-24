@@ -1032,7 +1032,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/04/02/redis-2/" class="post-title-link" itemprop="url">Redis知识归纳(二)过期策略</a>
+            <a href="/2020/04/02/redis-2/" class="post-title-link" itemprop="url">Redis知识归纳(二)数据结构及过期策略</a>
         </h2>
 
         <div class="post-meta">
@@ -1074,7 +1074,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>631</span>
+              <span>1.1k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -1093,26 +1093,39 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h3 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h3><ol>
-<li><p>string</p>
-<p>最简单的类型，可以做为简单的kv缓存</p>
+          <h3 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h3><p>2021-01-24更新：最近被问到redis数据结构的<strong>底层实现</strong>，发现这块还是薄弱的，因此来进行补充。</p>
+<ol>
+<li><p><strong>string（字符串）</strong></p>
+<ul>
+<li><strong>应用场景</strong>：最简单的类型，可以做为简单的kv缓存。</li>
+<li><strong>底层实现</strong>：<strong>动态字符串</strong>，是可以修改的字符串，在内存中是以<strong>字节数组</strong>的形式存在的，但是存储形式有两种，emb和raw形式。</li>
+</ul>
 </li>
-<li><p>list</p>
+<li><p><strong>list（列表）</strong></p>
+<ul>
+<li><strong>应用场景</strong>：有序队列，可以存储一些列表型的数据结构、通过lrange实现分页、也可以作为队列</li>
+<li><strong>底层实现</strong>：相当于Java语言中的LinkedList，是用<strong>链表</strong>实现的，即称之为快速链表quicklist的结构。在列表元素较少的情况下，使用一块连续的内存存储，结构是ziplist，即压缩列表，数据较多的情况下才会改成quicklist。</li>
+</ul>
+</li>
+<li><p><strong>hash（字典）</strong></p>
+<ul>
+<li><strong>应用场景</strong>：**map的接口、一般用来存储结构化的对象</li>
+<li><strong>底层实现：</strong>相当于Java语言中的HashMap，数据结构是<strong>数组+链表</strong>的结构。采用<strong>渐进式rehash</strong>的策略：在rehash的同时，保留新旧两个hash结构，查询同时查询两个hash结构，后续定时任务中和hash操作中，渐进的将旧hash的内存迁移到新的hash中。</li>
+</ul>
+</li>
+<li><p><strong>set（集合）</strong></p>
+<ul>
+<li><strong>应用场景：</strong>无序结合，自动去重，可以用来计算交集、并集、差集</li>
+<li><strong>底层实现：</strong>相当于Java语言中的HashSet，内部实现相当于一个<strong>特殊的字典</strong>，字典中的value都是一个值null。</li>
+</ul>
+</li>
+<li><p><strong>zset（有序集合）</strong></p>
+<ul>
+<li><strong>应用场景：</strong>排序的set，通过sorce自动排序。</li>
+<li><strong>底层实现：</strong>内部实现是用<strong>跳表</strong>的数据结构。</li>
+</ul>
 </li>
 </ol>
-<p>有序队列，可以存储一些列表型的数据结构、通过lrange实现分页、也可以作为队列</p>
-<ol start="3">
-<li>hash</li>
-</ol>
-<p>类似于map的接口、一般用来存储结构化的对象</p>
-<ol start="4">
-<li>set</li>
-</ol>
-<p>无序结合，自动去重，可以用来计算交集、并集、差集</p>
-<ol start="5">
-<li>sort set</li>
-</ol>
-<p>排序的set，通过sorce自动排序。数据结构是跳跃表</p>
 <h3 id="redis过期策略"><a href="#redis过期策略" class="headerlink" title="redis过期策略"></a>redis过期策略</h3><p>redis 的过期策略是 ：<strong>定期删除 + 惰性删除</strong>。</p>
 <p>定期删除指的是：redis每秒10次，即每100ms<strong>随机抽取</strong>一些设置了过期时间的key，检查其是否过期，如果过期，就从redis中删除。如果有多于25%的keys过期，那么就再来一次。</p>
 <p>惰性删除指的是：当获取 某个key的时候，如果key已经过期，那么不返回任何东西，并且删除。</p>
@@ -1387,12 +1400,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">419k</span>
+    <span title="站点总字数">421k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">6:21</span>
+    <span title="站点阅读时长">6:23</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>

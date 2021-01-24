@@ -31,7 +31,7 @@
 <meta property="og:image" content="http://yoursite.com/2021/01/23/interview-2021/image-20210123003448930.png">
 <meta property="og:image" content="http://yoursite.com/2021/01/23/interview-2021/image-20200507203214912.png">
 <meta property="article:published_time" content="2021-01-22T16:36:25.000Z">
-<meta property="article:modified_time" content="2021-01-23T17:41:09.194Z">
+<meta property="article:modified_time" content="2021-01-24T16:25:09.441Z">
 <meta property="article:author" content="Lcc">
 <meta property="article:tag" content="面试">
 <meta name="twitter:card" content="summary">
@@ -265,14 +265,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.3k</span>
+              <span>5.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>5 分钟</span>
             </span>
 
         </div>
@@ -362,6 +362,7 @@
 <h4 id="Redis的持久化机制有哪些？有什么区别？"><a href="#Redis的持久化机制有哪些？有什么区别？" class="headerlink" title="Redis的持久化机制有哪些？有什么区别？"></a>Redis的持久化机制有哪些？有什么区别？</h4><ul>
 <li>RDB，属于快照模式。</li>
 <li>AOF，AOF机制对每条写入命令作为日志，以append-only的模式写入到日志文件中，在redis重启时，可以通过回放AOF日志中的写入命令来重构整个数据集。</li>
+<li><strong>Redis 4.0之后推出混合持久化</strong>。将RDB文件的内容和增量的AOF日志文件放在一起。重启的时候先加载RDB文件，再重放增量AOF日志。</li>
 </ul>
 <p>同时使用RDB和AOF两种持久化机制，Redis重启时，会默认使用AOF来重新构建数据。</p>
 <p><strong>区别</strong>：</p>
@@ -371,6 +372,13 @@
 <li>AOF更好保证数据不丢失，最多会丢失1秒钟的数据，可读性高，适合灾难性的误删除的紧急恢复。</li>
 <li>AOF以append-only的模式写入，也就是追加的方式，没有磁盘寻址开销，写入性能高，文件不容易损坏。即便AOF文件过大，还会进行重写操作。</li>
 </ul>
+<h4 id="Redis的5种基础数据结构的底层实现数据结构是什么？"><a href="#Redis的5种基础数据结构的底层实现数据结构是什么？" class="headerlink" title="Redis的5种基础数据结构的底层实现数据结构是什么？"></a>Redis的5种基础数据结构的底层实现数据结构是什么？</h4><p>补充了在了之前的<a href="https://blog.yzylcc.top/2020/04/02/redis-2/" target="_blank" rel="noopener">Redis知识归纳(二)数据结构及过期策略</a>。</p>
+<h4 id="Zset为什么要用跳表而不用树"><a href="#Zset为什么要用跳表而不用树" class="headerlink" title="Zset为什么要用跳表而不用树?"></a>Zset为什么要用跳表而不用树?</h4><ol>
+<li><strong>范围查找时，平衡树比跳表操作要复杂</strong>。平衡树上，找到指定返回的小值之后，还要中序遍历的顺序（左子树–根节点–右子树）继续寻找其他不超过大值的节点，平衡树上比较难实现。而在跳表上范围查询就比较简单，只需找到小值之后，对第一层链表进行若干遍历即可实现。</li>
+<li><strong>平衡树的插入和删除操作可能引发子树的调整，逻辑复杂</strong>。而跳表的插入和删除只需修改相邻节点的指针，操作简单快速。</li>
+<li><strong>内存占用上，平衡树每个节点包含两个指针，占用较多</strong>。而跳表每个节点包含指针跟层数有关，为1/(1-p)，比平衡树更有优势。</li>
+<li><strong>算法实现难度上，跳表比平衡树简单的多</strong>。</li>
+</ol>
 <h4 id="springmvc怎么跟spring集成的？（待解决）"><a href="#springmvc怎么跟spring集成的？（待解决）" class="headerlink" title="springmvc怎么跟spring集成的？（待解决）"></a>springmvc怎么跟spring集成的？（待解决）</h4><h4 id="为什么RocketMQ的性能这么高？"><a href="#为什么RocketMQ的性能这么高？" class="headerlink" title="为什么RocketMQ的性能这么高？"></a>为什么RocketMQ的性能这么高？</h4><p><a href="https://blog.csdn.net/hosaos/article/details/105204922这篇文章总结的很好。" target="_blank" rel="noopener">https://blog.csdn.net/hosaos/article/details/105204922这篇文章总结的很好。</a></p>
 <p>概括一下主要是：</p>
 <ul>
@@ -407,11 +415,43 @@
 </ul>
 </li>
 </ul>
+<h4 id="RocketMQ-顺序消息实现的原理是什么？"><a href="#RocketMQ-顺序消息实现的原理是什么？" class="headerlink" title="RocketMQ 顺序消息实现的原理是什么？"></a>RocketMQ 顺序消息实现的原理是什么？</h4><p>RokcetMQ的顺序消息包括了<strong>全局顺序消费</strong>和<strong>局部顺序消费</strong>。</p>
+<ul>
+<li><strong>全局顺序消费</strong>：<ul>
+<li>所有发送到MQ的消息都被顺序消费，需要严格保证全局操作的顺序性。</li>
+<li>需要设置topic下读写队列数量为1。</li>
+<li>缺点是：没必要，严重影响系统并发性。</li>
+</ul>
+</li>
+<li><strong>局部顺序消费</strong>：<ul>
+<li>保证消息顺序消费，有三个关键点：<ul>
+<li><strong>消息顺序发送</strong></li>
+<li><strong>消息顺序存储</strong></li>
+<li><strong>消息顺序消费</strong></li>
+</ul>
+</li>
+<li>所以做到这三个关键点就需要：<ul>
+<li><strong>消息顺序发送</strong>由<strong>业务方在单线程使用同步发送消息的方式保证</strong>。</li>
+<li><strong>消息顺序存储</strong>由<strong>业务方将同一个业务编号的消息发送到一个队列中来实现</strong>。</li>
+<li>消息顺序消费，<strong>使用MessageListenerOrderly监听器</strong>，其源码大概步骤是:<ol>
+<li>创建消息拉取任务时，消息客户端向broker端申请锁定MessageQueue，使得MessageQueue同一时刻只能被一个消费客户端消费。</li>
+<li>消息消费时，多线程针对同一个消息队列的消费先尝试使用synchronized申请独占锁，加锁成功才能进行消费，使得一个MessageQueue同一时刻只能被一个消费客户端中一个线程消费。</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>需要注意的是：对于顺序消息，当消费者消费消息失败后，消息队列会 自动不断进行消息重试，此时应用会出现消息消费被阻塞的情况，因此使用顺序消息时，要保证应用能够及时监控并处理消费失败的情况，避免阻塞的发生。</li>
+</ul>
+</li>
+</ul>
 <blockquote>
 <p>参考列表</p>
 <ol>
 <li><a href="https://www.cnblogs.com/javazhiyin/p/12985656.html" target="_blank" rel="noopener">https://www.cnblogs.com/javazhiyin/p/12985656.html</a></li>
 <li><a href="https://my.oschina.net/lishangzhi/blog/4742868" target="_blank" rel="noopener">https://my.oschina.net/lishangzhi/blog/4742868</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/23370124" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/23370124</a></li>
+<li><a href="https://blog.csdn.net/hosaos/article/details/90675978（顺序消息）" target="_blank" rel="noopener">https://blog.csdn.net/hosaos/article/details/90675978（顺序消息）</a></li>
+<li><a href="https://help.aliyun.com/document_detail/49323.html?spm=a2c4g.11186623.2.13.30c32a2csHi7pD" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/49323.html?spm=a2c4g.11186623.2.13.30c32a2csHi7pD</a></li>
 </ol>
 </blockquote>
 
@@ -495,7 +535,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#2021-01-22更新"><span class="nav-number">1.</span> <span class="nav-text">2021.01.22更新</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#volatile的原理是什么？"><span class="nav-number">1.1.</span> <span class="nav-text">volatile的原理是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JMM有什么意义？MESI各指的是什么？"><span class="nav-number">1.2.</span> <span class="nav-text">JMM有什么意义？MESI各指的是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手写一个Double-Check"><span class="nav-number">1.3.</span> <span class="nav-text">手写一个Double Check?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZK中的Watcher机制原理、特点是什么？"><span class="nav-number">1.4.</span> <span class="nav-text">ZK中的Watcher机制原理、特点是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZAB协议知道吗？"><span class="nav-number">1.5.</span> <span class="nav-text">ZAB协议知道吗？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#描述一下Redis集群的脑裂情况？怎么解决？"><span class="nav-number">1.6.</span> <span class="nav-text">描述一下Redis集群的脑裂情况？怎么解决？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的持久化机制有哪些？有什么区别？"><span class="nav-number">1.7.</span> <span class="nav-text">Redis的持久化机制有哪些？有什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#springmvc怎么跟spring集成的？（待解决）"><span class="nav-number">1.8.</span> <span class="nav-text">springmvc怎么跟spring集成的？（待解决）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么RocketMQ的性能这么高？"><span class="nav-number">1.9.</span> <span class="nav-text">为什么RocketMQ的性能这么高？</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#2021-01-22更新"><span class="nav-number">1.</span> <span class="nav-text">2021.01.22更新</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#volatile的原理是什么？"><span class="nav-number">1.1.</span> <span class="nav-text">volatile的原理是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JMM有什么意义？MESI各指的是什么？"><span class="nav-number">1.2.</span> <span class="nav-text">JMM有什么意义？MESI各指的是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#手写一个Double-Check"><span class="nav-number">1.3.</span> <span class="nav-text">手写一个Double Check?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZK中的Watcher机制原理、特点是什么？"><span class="nav-number">1.4.</span> <span class="nav-text">ZK中的Watcher机制原理、特点是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZAB协议知道吗？"><span class="nav-number">1.5.</span> <span class="nav-text">ZAB协议知道吗？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#描述一下Redis集群的脑裂情况？怎么解决？"><span class="nav-number">1.6.</span> <span class="nav-text">描述一下Redis集群的脑裂情况？怎么解决？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的持久化机制有哪些？有什么区别？"><span class="nav-number">1.7.</span> <span class="nav-text">Redis的持久化机制有哪些？有什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的5种基础数据结构的底层实现数据结构是什么？"><span class="nav-number">1.8.</span> <span class="nav-text">Redis的5种基础数据结构的底层实现数据结构是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Zset为什么要用跳表而不用树"><span class="nav-number">1.9.</span> <span class="nav-text">Zset为什么要用跳表而不用树?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#springmvc怎么跟spring集成的？（待解决）"><span class="nav-number">1.10.</span> <span class="nav-text">springmvc怎么跟spring集成的？（待解决）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么RocketMQ的性能这么高？"><span class="nav-number">1.11.</span> <span class="nav-text">为什么RocketMQ的性能这么高？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RocketMQ-顺序消息实现的原理是什么？"><span class="nav-number">1.12.</span> <span class="nav-text">RocketMQ 顺序消息实现的原理是什么？</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -557,12 +597,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">419k</span>
+    <span title="站点总字数">421k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">6:21</span>
+    <span title="站点阅读时长">6:23</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
